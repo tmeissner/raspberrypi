@@ -1,3 +1,24 @@
+-- BCM2835 library Ada bindings
+-- derived from /usr/local/include/bcm2835.h
+-- with the GNAT compiler:
+--
+-- $ g++ -c -fdump-ada-spec -C /usr/local/include/bcm2835.h
+-- $ gcc -c -gnat05 *.ads
+-- 
+-- see more at: http://www.adacore.com/adaanswers/gems/gem-59/#sthash.eDZ2bNEb.dpuf
+--
+-- we get two files:
+-- bcm2835_h.ads -> BCM2835 bindings
+-- stdint_h.ads  -> stint bindings
+--
+-- some #defines couldn't be transformed by GNAT, so we have to do that manually
+-- they are marked and commented out in the generated file
+-- I've converted them by myself in this file, they are marked with the
+-- 'manually converted' comment before (first expressions after the big comment block at the bgin of the package)
+
+
+
+
 with Interfaces.C; use Interfaces.C;
 with stdint_h;
 with Interfaces.C.Strings;
@@ -322,7 +343,7 @@ package bcm2835_h is
   --/ Base Physical Address of the PWM registers
   --/ Base Physical Address of the BSC1 registers
 
-  -- manual converted
+  -- manually converted
   HIGH                            : constant unsigned := 16#1#;
   LOW                             : constant unsigned := 16#0#;
   BCM2835_CORE_CLK_HZ             : constant unsigned := 250000000;
