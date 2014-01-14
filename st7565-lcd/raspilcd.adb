@@ -39,10 +39,15 @@ package body RaspiLcd is
     end lcd_init;
 
 
+    -- display strings on the lcd at a given position
+    -- data is a string with any allowed range
+    -- for strings not beginning at 0 we have to decrement the index
+    -- variable for xpos by the value of the range begin, so we get
+    -- for xpos a range from (xpos + 0 .. xpos + number of char in string)  
     procedure lcd_ascii57_string (xpos : natural; ypos : natural; data : string) is
     begin
-        for index in 0 .. data'length-1 loop
-            lcd_ascii57(xpos => xpos + index * 6, ypos => ypos, data => character'val(character'pos(data(index+1))));
+        for index in data'range loop
+            lcd_ascii57(xpos => xpos + (index - data'first) * 6, ypos => ypos, data => character'val(character'pos(data(index))));
         end loop;
     end lcd_ascii57_string;
 
