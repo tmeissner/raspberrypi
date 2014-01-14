@@ -52,7 +52,7 @@ package body RaspiLcd is
         lcd_set_page(page => ypos, column => xpos);
         -- write one 5x7 char
         for index in 0..4 loop
-            lcd_transfer_data(value => font_5x7(character'pos(data) - 32)(index), si => true);
+            lcd_transfer_data(value => font_5x7(character'pos(data))(index), si => true);
         end loop;
         -- one free column between chars
         lcd_transfer_data(value => 16#00#, si => true);

@@ -14,7 +14,7 @@ package RaspiLcd is
 
 
     -- character set
-    font_5x7 : constant byte_byte_array := (
+    font_5x7 : constant byte_byte_array (32 .. 126) := (
         ( 16#00#, 16#00#, 16#00#, 16#00#, 16#00# ),  --   - 16#20 - 32
         ( 16#00#, 16#00#, 16#5f#, 16#00#, 16#00# ),  -- ! - 16#21 - 33
         ( 16#00#, 16#07#, 16#00#, 16#07#, 16#00# ),  -- " - 16#22 - 34
