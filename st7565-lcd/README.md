@@ -2,7 +2,7 @@
 
 ## dependencies
 
-* BCM2835 library: [(http://www.airspayce.com/mikem/bcm2835/](http://www.airspayce.com/mikem/bcm2835/index.html)
+* BCM2835 library: [http://www.airspayce.com/mikem/bcm2835/](http://www.airspayce.com/mikem/bcm2835/index.html)
 * GNAT compiler: `sudo apt-get install gnat`
 
 ## building
