@@ -7,7 +7,7 @@
 
 ## building
 
-`gnat gnatmake raspilcd.adb -largs /usr/local/lib/libbcm2835.a`
+`gnatmake raspilcd.adb -largs /usr/local/lib/libbcm2835.a`
 
 ## using
 
