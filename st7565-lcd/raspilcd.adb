@@ -9,7 +9,7 @@ use bcm2835_h;
 
 
 
-package body RaspiLcd is
+package body st7565lcd is
 
 
     procedure io_init is
@@ -64,7 +64,7 @@ package body RaspiLcd is
     end lcd_ascii57;
 
 
-    procedure lcd_picture (xpos : natural; ypos: natural) is
+    procedure lcd_picture (xpos : natural; ypos: natural; picture : t_lcd_array) is
     begin
         for outdex in 0..7 loop 
             lcd_set_page(page => ypos + outdex, column => xpos);
@@ -134,4 +134,42 @@ package body RaspiLcd is
     end lcd_byte;
 
 
-end RaspiLcd;
+    function bmp_to_lcd (bmp : t_bmp_array; color_mask : t_color_mask) return t_lcd_array is
+        lcd   : t_lcd_array := (others => 16#00#);
+        logic : byte;
+    begin
+        for aussen in 0 .. 7 loop
+           logic := 16#01#;
+           for outdex in 0 .. 7 loop
+              for index in 0 .. 127 loop
+                 if ((bmp(aussen * 1024 + outdex * 128 + index)(which_byte(color_mask.red)) or
+                      bmp(aussen * 1024 + outdex * 128 + index)(which_byte(color_mask.green)) or
+                      bmp(aussen * 1024 + outdex * 128 + index)(which_byte(color_mask.blue))) < 16#77#) then
+                    lcd(aussen * 128 + index) := lcd(aussen * 128 + index) or logic;
+                 end if;
+              end loop;
+              logic := Shift_Left(logic, 1);
+           end loop;
+        end loop;
+        return lcd;
+    end bmp_to_lcd;
+
+
+    function which_byte (data : dword) return integer is
+    begin
+        case data is
+            when 16#000000FF# =>
+                return 0;
+            when 16#0000FF00# =>
+                return 1;
+            when 16#00FF0000# =>
+                return 2;
+            when 16#FF000000# =>
+                return 3;
+            when others =>
+                return -1;
+        end case;
+    end which_byte;
+
+
+end st7565lcd;

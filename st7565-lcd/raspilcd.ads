@@ -2,19 +2,53 @@ with Interfaces;
 with Interfaces.C;
 
 
-package RaspiLcd is
+package st7565lcd is
 
 
     -- type definitions
-    subtype byte is Interfaces.Unsigned_8;
+    subtype byte  is Interfaces.Unsigned_8;
+    subtype word  is Interfaces.Unsigned_16;
+    subtype dword is Interfaces.Unsigned_32;
 
-    type byte_array is array (natural range <>) of byte;
+    type t_byte_array is array (natural range <>) of byte;
+    
+    type t_font_array is array (natural range <>) of t_byte_array (0 .. 4);
 
-    type byte_byte_array is array (natural range <>) of byte_array (0 .. 4);
+    type t_bmp_array is array (natural range <>) of t_byte_array (0 .. 3);
+
+    subtype t_lcd_array is t_byte_array (0 .. 128 * 8 - 1);
+
+
+    -- bmp header structure
+    type t_bmp_header is record
+        bfType          : word;
+        bfSize          : dword;
+        bfReserved      : dword;
+        bfOffBits       : dword;
+        biSize          : dword;
+        biWidth         : integer;
+        biHeight        : integer;
+        biPlanes        : word;
+        biBitCount      : word;
+        biCompression   : dword;
+        biSizeImage     : dword;
+        biXPelsPerMeter : integer;
+        biYPelsPerMeter : integer;
+        biClrUsed       : dword;
+        biClrImportant  : dword;
+    end record;
+
+    -- color mask
+    type t_color_mask is record
+        red   : dword := 16#00FF0000#;
+        green : dword := 16#0000FF00#;
+        blue  : dword := 16#000000FF#;
+        alpha : dword := 16#FF000000#;
+    end record;
 
 
     -- character set
-    font_5x7 : constant byte_byte_array (32 .. 126) := (
+    font_5x7 : constant t_font_array (32 .. 126) := (
         ( 16#00#, 16#00#, 16#00#, 16#00#, 16#00# ),  --   - 16#20 - 32
         ( 16#00#, 16#00#, 16#5f#, 16#00#, 16#00# ),  -- ! - 16#21 - 33
         ( 16#00#, 16#07#, 16#00#, 16#07#, 16#00# ),  -- " - 16#22 - 34
@@ -114,7 +148,7 @@ package RaspiLcd is
 
 
     -- raspberry picture
-    picture : constant byte_array := (
+    raspberry : constant t_lcd_array := (
         16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#, -- 1. row
         16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#,16#00#, -- 1. row
         16#00#,16#00#,16#00#,16#00#,16#F0#,16#F8#,16#58#,16#1C#,16#1C#,16#0C#,16#0C#,16#06#,16#86#,16#86#,16#86#,16#0E#, -- 1. row
@@ -183,7 +217,7 @@ package RaspiLcd is
 
 
     -- lcd init values
-    lcd_init_data : constant byte_array := (
+    lcd_init_data : constant t_byte_array := (
         16#a0#,  -- cmd8:  adc select
         16#c0#,  -- cmd15: shl select
         16#a3#,  -- cmd11: lcd bias set
@@ -214,11 +248,14 @@ package RaspiLcd is
     procedure lcd_init;
     procedure lcd_ascii57_string (xpos : natural; ypos : natural; data : string);
     procedure lcd_ascii57 (xpos : natural; ypos : natural; data : character);
-    procedure lcd_picture (xpos : natural; ypos: natural);
+    procedure lcd_picture (xpos : natural; ypos: natural; picture : t_lcd_array);
     procedure lcd_clear;
     procedure lcd_set_page (page : natural; column : natural);
     procedure lcd_transfer_data (value : byte; si : boolean);
     procedure lcd_byte (data : byte);
 
+    function bmp_to_lcd (bmp : t_bmp_array; color_mask : t_color_mask) return t_lcd_array;
+    function which_byte (data : dword) return integer;
 
-end RaspiLcd;
+
+end st7565lcd;
