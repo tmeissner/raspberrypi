@@ -1,21 +1,3 @@
--- raspilcd, a simple tool to display bmp pictures & text on a ST7565 LCD
--- Copyright (C) 2014  Torsten Meissner
--- 
--- This program is free software: you can redistribute it and/or modify
--- it under the terms of the GNU General Public License as published by
--- the Free Software Foundation, either version 3 of the License, or
--- (at your option) any later version.
--- 
--- This program is distributed in the hope that it will be useful,
--- but WITHOUT ANY WARRANTY; without even the implied warranty of
--- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--- GNU General Public License for more details.
--- 
--- You should have received a copy of the GNU General Public License
--- along with this program.  If not, see http://www.gnu.org/licenses/.
-
-
-
 with Interfaces;
 use Interfaces;
 with Interfaces.C;
@@ -24,6 +6,8 @@ with Interfaces.C.extensions;
 use Interfaces.C.extensions;
 with bcm2835_h;
 use bcm2835_h;
+with Ada.Text_IO;
+use Ada.Text_IO;
 
 
 
@@ -152,7 +136,7 @@ package body st7565lcd is
     end lcd_byte;
 
 
-    function bmp_to_lcd (bmp : t_bmp_array; color_mask : t_color_mask) return t_lcd_array is
+    function bmp_to_lcd (bmp_picture : t_bmp_picture) return t_lcd_array is
         lcd   : t_lcd_array := (others => 16#00#);
         logic : byte;
     begin
@@ -160,9 +144,9 @@ package body st7565lcd is
            logic := 16#01#;
            for outdex in 0 .. 7 loop
               for index in 0 .. 127 loop
-                 if ((bmp(aussen * 1024 + outdex * 128 + index)(which_byte(color_mask.red)) or
-                      bmp(aussen * 1024 + outdex * 128 + index)(which_byte(color_mask.green)) or
-                      bmp(aussen * 1024 + outdex * 128 + index)(which_byte(color_mask.blue))) < 16#77#) then
+                 if ((bmp_picture.data(aussen * 1024 + outdex * 128 + index)(which_byte(bmp_picture.mask.red)) or
+                      bmp_picture.data(aussen * 1024 + outdex * 128 + index)(which_byte(bmp_picture.mask.green)) or
+                      bmp_picture.data(aussen * 1024 + outdex * 128 + index)(which_byte(bmp_picture.mask.blue))) < 16#88#) then
                     lcd(aussen * 128 + index) := lcd(aussen * 128 + index) or logic;
                  end if;
               end loop;
@@ -185,9 +169,47 @@ package body st7565lcd is
             when 16#FF000000# =>
                 return 3;
             when others =>
-                return -1;
+                raise mask_exception;
         end case;
     end which_byte;
+
+
+    -- read_bmp : read a bmp file in t_bmp_picture record
+    procedure read_bmp (file        : in     Ada.Streams.Stream_IO.File_Type;
+                        file_access : access Ada.Streams.Root_Stream_Type'Class;
+                        bmp_picture : in out t_bmp_picture) is
+    begin
+        -- read header
+        t_bmp_header'Read(file_access, bmp_picture.header);
+        -- check for valid header
+        if (abs bmp_picture.header.biHeight /= 64 or bmp_picture.header.biWidth /= 128 or 
+                (bmp_picture.header.biCompression /= 0 and bmp_picture.header.biCompression /= 3) or
+                bmp_picture.header.biBitCount /= 32) then
+            raise bmp_exception;
+        end if;
+        -- get color map if existing
+        if bmp_picture.header.biCompression = 3 then
+            t_color_mask'Read(file_access, bmp_picture.mask);
+        end if;
+        -- read in image data
+        if bmp_picture.header.biHeight < 0 then
+            -- top-down pixel matrix
+            for index in bmp_picture.data'range loop
+                if not Ada.Streams.Stream_IO.End_Of_File(file) then
+                    t_byte_array'Read(file_access, bmp_picture.data(index));
+                end if;
+            end loop;
+        else
+            -- bottom-top pixel matrix
+            for row in reverse 0 .. 63 loop
+                for column in 0 .. 127 loop
+                    if not Ada.Streams.Stream_IO.End_Of_File(file) then
+                        t_byte_array'Read(file_access, bmp_picture.data(row * 128 + column));
+                    end if;
+                end loop;
+            end loop;
+        end if;
+    end read_bmp;
 
 
 end st7565lcd;

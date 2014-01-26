@@ -1,23 +1,7 @@
--- raspilcd, a simple tool to display bmp pictures & text on a ST7565 LCD
--- Copyright (C) 2014  Torsten Meissner
--- 
--- This program is free software: you can redistribute it and/or modify
--- it under the terms of the GNU General Public License as published by
--- the Free Software Foundation, either version 3 of the License, or
--- (at your option) any later version.
--- 
--- This program is distributed in the hope that it will be useful,
--- but WITHOUT ANY WARRANTY; without even the implied warranty of
--- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--- GNU General Public License for more details.
--- 
--- You should have received a copy of the GNU General Public License
--- along with this program.  If not, see http://www.gnu.org/licenses/.
-
-
-
 with Interfaces;
 with Interfaces.C;
+with Ada.Streams.Stream_IO;
+
 
 
 package st7565lcd is
@@ -32,7 +16,7 @@ package st7565lcd is
     
     type t_font_array is array (natural range <>) of t_byte_array (0 .. 4);
 
-    type t_bmp_array is array (natural range <>) of t_byte_array (0 .. 3);
+    type t_bmp_array is array (0 .. 128 * 64 - 1) of t_byte_array (0 .. 3);
 
     subtype t_lcd_array is t_byte_array (0 .. 128 * 8 - 1);
 
@@ -62,6 +46,13 @@ package st7565lcd is
         green : dword := 16#0000FF00#;
         blue  : dword := 16#000000FF#;
         alpha : dword := 16#FF000000#;
+    end record;
+
+    -- bmp record
+    type t_bmp_picture is record
+        header  : t_bmp_header;
+        mask    : t_color_mask;
+        data    : t_bmp_array;
     end record;
 
 
@@ -261,7 +252,14 @@ package st7565lcd is
     LCD_SI  : constant Interfaces.C.unsigned_char := 17;
 
 
-    -- procedures declarations
+    -- exceptions
+    mask_exception : exception;
+    bmp_exception  : exception;
+
+    exception_head : string := "raspi-lcd version 0.1, (c) 2014 by tmeissner";
+
+
+    -- procedure declarations
     procedure io_init;
     procedure lcd_init;
     procedure lcd_ascii57_string (xpos : natural; ypos : natural; data : string);
@@ -271,8 +269,13 @@ package st7565lcd is
     procedure lcd_set_page (page : natural; column : natural);
     procedure lcd_transfer_data (value : byte; si : boolean);
     procedure lcd_byte (data : byte);
+    procedure read_bmp (file        : in     Ada.Streams.Stream_IO.File_Type;
+                        file_access : access Ada.Streams.Root_Stream_Type'Class;
+                        bmp_picture : in out t_bmp_picture);
 
-    function bmp_to_lcd (bmp : t_bmp_array; color_mask : t_color_mask) return t_lcd_array;
+
+    -- function declarations
+    function bmp_to_lcd (bmp_picture : t_bmp_picture) return t_lcd_array;
     function which_byte (data : dword) return integer;
 
 
