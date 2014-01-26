@@ -1,24 +1,3 @@
--- BCM2835 library Ada bindings
--- derived from /usr/local/include/bcm2835.h
--- with the GNAT compiler:
---
--- $ g++ -c -fdump-ada-spec -C /usr/local/include/bcm2835.h
--- $ gcc -c -gnat05 *.ads
--- 
--- see more at: http://www.adacore.com/adaanswers/gems/gem-59/#sthash.eDZ2bNEb.dpuf
---
--- we get two files:
--- bcm2835_h.ads -> BCM2835 bindings
--- stdint_h.ads  -> stint bindings
---
--- some #defines couldn't be transformed by GNAT, so we have to do that manually
--- they are marked and commented out in the generated file
--- I've converted them by myself in this file, they are marked with the
--- 'manually converted' comment before (first expressions after the big comment block at the bgin of the package)
-
-
-
-
 with Interfaces.C; use Interfaces.C;
 with stdint_h;
 with Interfaces.C.Strings;
@@ -30,7 +9,7 @@ package bcm2835_h is
   -- C and C++ support for Broadcom BCM 2835 as used in Raspberry Pi
   -- Author: Mike McCauley
   -- Copyright (C) 2011-2013 Mike McCauley
-  -- $Id: bcm2835.h,v 1.12 2013/10/30 03:09:31 mikem Exp mikem $
+  -- $Id: bcm2835.h,v 1.13 2013/12/06 22:24:52 mikem Exp mikem $
   --/ \mainpage C library for Broadcom BCM 2835 as used in Raspberry Pi
   --/
   --/ This is a C library for Raspberry Pi (RPi). It provides access to 
@@ -47,7 +26,7 @@ package bcm2835_h is
   --/ BCM 2835).
   --/
   --/ The version of the package that this documentation refers to can be downloaded 
-  --/ from http://www.airspayce.com/mikem/bcm2835/bcm2835-1.32.tar.gz
+  --/ from http://www.airspayce.com/mikem/bcm2835/bcm2835-1.36.tar.gz
   --/ You can find the latest version at http://www.airspayce.com/mikem/bcm2835
   --/
   --/ Several example programs are provided.
@@ -322,7 +301,14 @@ package bcm2835_h is
   --/ \version 1.31 Fix a GCC warning about dummy variable, patched by Alan Watson. Thanks.
   --/ \version 1.32 Added option I2C_V1 definition to compile for version 1 RPi. 
   --/               By default I2C code is generated for the V2 RPi which has SDA1 and SCL1 connected.
-  --/               Contributed by Malcolm Wiles.
+  --/               Contributed by Malcolm Wiles based on work by Arvi Govindaraj.
+  --/ \version 1.33 Added command line utilities i2c and gpio to examples. Contributed by Shahrooz Shahparnia.
+  --/ \version 1.34 Added bcm2835_i2c_write_read_rs() which writes an arbitrary number of bytes, 
+  --/               sends a repeat start, and reads from the device. Contributed by Eduardo Steinhorst.
+  --/ \version 1.35 Fix build errors when compiled under Qt. Also performance improvements with SPI transfers. Contributed by Udo Klaas.
+  --/ \version 1.36 Make automake's test runner detect that we're skipping tests when not root, the second
+  --/               one makes us skip the test when using fakeroot (as used when building
+  --/               Debian packages). Contributed by Guido Günther.
   --/
   --/ \author  Mike McCauley (mikem@airspayce.com) DO NOT CONTACT THE AUTHOR DIRECTLY: USE THE LISTS
   -- Defines for BCM2835
@@ -343,7 +329,7 @@ package bcm2835_h is
   --/ Base Physical Address of the PWM registers
   --/ Base Physical Address of the BSC1 registers
 
-  -- manually converted
+  -- manual converted
   HIGH                            : constant unsigned := 16#1#;
   LOW                             : constant unsigned := 16#0#;
   BCM2835_CORE_CLK_HZ             : constant unsigned := 250000000;
@@ -497,42 +483,42 @@ package bcm2835_h is
 
   --/ Base of the ST (System Timer) registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_st : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:348
+   bcm2835_st : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:355
    pragma Import (C, bcm2835_st, "bcm2835_st");
 
   --/ Base of the GPIO registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_gpio : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:352
+   bcm2835_gpio : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:359
    pragma Import (C, bcm2835_gpio, "bcm2835_gpio");
 
   --/ Base of the PWM registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_pwm : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:356
+   bcm2835_pwm : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:363
    pragma Import (C, bcm2835_pwm, "bcm2835_pwm");
 
   --/ Base of the CLK registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_clk : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:360
+   bcm2835_clk : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:367
    pragma Import (C, bcm2835_clk, "bcm2835_clk");
 
   --/ Base of the PADS registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_pads : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:364
+   bcm2835_pads : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:371
    pragma Import (C, bcm2835_pads, "bcm2835_pads");
 
   --/ Base of the SPI0 registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_spi0 : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:368
+   bcm2835_spi0 : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:375
    pragma Import (C, bcm2835_spi0, "bcm2835_spi0");
 
   --/ Base of the BSC0 registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_bsc0 : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:372
+   bcm2835_bsc0 : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:379
    pragma Import (C, bcm2835_bsc0, "bcm2835_bsc0");
 
   --/ Base of the BSC1 registers.
   --/ Available after bcm2835_init has been called
-   bcm2835_bsc1 : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:376
+   bcm2835_bsc1 : access stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:383
    pragma Import (C, bcm2835_bsc1, "bcm2835_bsc1");
 
   --/ Size of memory page on RPi
@@ -561,7 +547,7 @@ package bcm2835_h is
    BCM2835_GPIO_FSEL_ALT3 : constant bcm2835FunctionSelect := 7;
    BCM2835_GPIO_FSEL_ALT4 : constant bcm2835FunctionSelect := 3;
    BCM2835_GPIO_FSEL_ALT5 : constant bcm2835FunctionSelect := 2;
-   BCM2835_GPIO_FSEL_MASK : constant bcm2835FunctionSelect := 7;  -- /usr/local/include/bcm2835.h:431
+   BCM2835_GPIO_FSEL_MASK : constant bcm2835FunctionSelect := 7;  -- /usr/local/include/bcm2835.h:438
 
   --/ \brief bcm2835PUDControl
   --/ Pullup/Pulldown defines for bcm2835_gpio_pud()
@@ -572,13 +558,7 @@ package bcm2835_h is
      (BCM2835_GPIO_PUD_OFF,
       BCM2835_GPIO_PUD_DOWN,
       BCM2835_GPIO_PUD_UP);
-   pragma Convention (C, bcm2835PUDControl);  -- /usr/local/include/bcm2835.h:440
-
-
-  --BCM2835_GPIO_PUD_OFF  : constant unsigned := 2#00#;
-  --BCM2835_GPIO_PUD_DOWN : constant unsigned := 2#01#;
-  --BCM2835_GPIO_PUD_UP   : constant unsigned := 2#10#;
-
+   pragma Convention (C, bcm2835PUDControl);  -- /usr/local/include/bcm2835.h:447
 
   --/ Pad control register offsets from BCM2835_GPIO_PADS
   --/ Pad Control masks
@@ -591,12 +571,7 @@ package bcm2835_h is
      (BCM2835_PAD_GROUP_GPIO_0_27,
       BCM2835_PAD_GROUP_GPIO_28_45,
       BCM2835_PAD_GROUP_GPIO_46_53);
-   pragma Convention (C, bcm2835PadGroup);  -- /usr/local/include/bcm2835.h:467
-
-  --BCM2835_PAD_GROUP_GPIO_0_27  : constant unsigned := 0;
-  --BCM2835_PAD_GROUP_GPIO_28_45 : constant unsigned := 1;
-  --BCM2835_PAD_GROUP_GPIO_46_53 : constant unsigned := 2;
-
+   pragma Convention (C, bcm2835PadGroup);  -- /usr/local/include/bcm2835.h:474
 
   --/ \brief GPIO Pin Numbers
   --/
@@ -686,7 +661,7 @@ package bcm2835_h is
    RPI_V2_GPIO_P5_03 : constant RPiGPIOPin := 28;
    RPI_V2_GPIO_P5_04 : constant RPiGPIOPin := 29;
    RPI_V2_GPIO_P5_05 : constant RPiGPIOPin := 30;
-   RPI_V2_GPIO_P5_06 : constant RPiGPIOPin := 31;  -- /usr/local/include/bcm2835.h:524
+   RPI_V2_GPIO_P5_06 : constant RPiGPIOPin := 31;  -- /usr/local/include/bcm2835.h:531
 
   -- Defines for SPI
   -- GPIO register offsets from BCM2835_SPI0_BASE. 
@@ -699,11 +674,7 @@ package bcm2835_h is
    type bcm2835SPIBitOrder is 
      (BCM2835_SPI_BIT_ORDER_LSBFIRST,
       BCM2835_SPI_BIT_ORDER_MSBFIRST);
-   pragma Convention (C, bcm2835SPIBitOrder);  -- /usr/local/include/bcm2835.h:570
-
-  --BCM2835_SPI_BIT_ORDER_LSBFIRST : constant unsigned := 0;
-  --BCM2835_SPI_BIT_ORDER_MSBFIRST : constant unsigned := 1;
-
+   pragma Convention (C, bcm2835SPIBitOrder);  -- /usr/local/include/bcm2835.h:577
 
   --/ \brief SPI Data mode
   --/ Specify the SPI data mode to be passed to bcm2835_spi_setDataMode()
@@ -716,13 +687,7 @@ package bcm2835_h is
       BCM2835_SPI_MODE1,
       BCM2835_SPI_MODE2,
       BCM2835_SPI_MODE3);
-   pragma Convention (C, bcm2835SPIMode);  -- /usr/local/include/bcm2835.h:580
-
-   --BCM2835_SPI_MODE0 : constant unsigned := 0;
-   --BCM2835_SPI_MODE1 : constant unsigned := 1;
-   --BCM2835_SPI_MODE2 : constant unsigned := 2;
-   --BCM2835_SPI_MODE3 : constant unsigned := 3;
-
+   pragma Convention (C, bcm2835SPIMode);  -- /usr/local/include/bcm2835.h:587
 
   --/ \brief bcm2835SPIChipSelect
   --/ Specify the SPI chip select pin(s)
@@ -735,12 +700,7 @@ package bcm2835_h is
       BCM2835_SPI_CS1,
       BCM2835_SPI_CS2,
       BCM2835_SPI_CS_NONE);
-   pragma Convention (C, bcm2835SPIChipSelect);  -- /usr/local/include/bcm2835.h:590
-
-  --BCM2835_SPI_CS0     : constant unsigned := 0;
-  --BCM2835_SPI_CS1     : constant unsigned := 1;
-  --BCM2835_SPI_CS2     : constant unsigned := 2;
-  --BCM2835_SPI_CS_NONE : constant unsigned := 3;
+   pragma Convention (C, bcm2835SPIChipSelect);  -- /usr/local/include/bcm2835.h:597
 
   --/ \brief bcm2835SPIClockDivider
   --/ Specifies the divider used to generate the SPI clock from the system clock.
@@ -782,7 +742,7 @@ package bcm2835_h is
    BCM2835_SPI_CLOCK_DIVIDER_8 : constant bcm2835SPIClockDivider := 8;
    BCM2835_SPI_CLOCK_DIVIDER_4 : constant bcm2835SPIClockDivider := 4;
    BCM2835_SPI_CLOCK_DIVIDER_2 : constant bcm2835SPIClockDivider := 2;
-   BCM2835_SPI_CLOCK_DIVIDER_1 : constant bcm2835SPIClockDivider := 1;  -- /usr/local/include/bcm2835.h:617
+   BCM2835_SPI_CLOCK_DIVIDER_1 : constant bcm2835SPIClockDivider := 1;  -- /usr/local/include/bcm2835.h:624
 
   -- Defines for I2C
   -- GPIO register offsets from BCM2835_BSC*_BASE.
@@ -800,7 +760,7 @@ package bcm2835_h is
    BCM2835_I2C_CLOCK_DIVIDER_2500 : constant bcm2835I2CClockDivider := 2500;
    BCM2835_I2C_CLOCK_DIVIDER_626 : constant bcm2835I2CClockDivider := 626;
    BCM2835_I2C_CLOCK_DIVIDER_150 : constant bcm2835I2CClockDivider := 150;
-   BCM2835_I2C_CLOCK_DIVIDER_148 : constant bcm2835I2CClockDivider := 148;  -- /usr/local/include/bcm2835.h:664
+   BCM2835_I2C_CLOCK_DIVIDER_148 : constant bcm2835I2CClockDivider := 148;  -- /usr/local/include/bcm2835.h:671
 
   --/ \brief bcm2835I2CReasonCodes
   --/ Specifies the reason codes for the bcm2835_i2c_write and bcm2835_i2c_read functions.
@@ -812,7 +772,7 @@ package bcm2835_h is
    BCM2835_I2C_REASON_OK : constant bcm2835I2CReasonCodes := 0;
    BCM2835_I2C_REASON_ERROR_NACK : constant bcm2835I2CReasonCodes := 1;
    BCM2835_I2C_REASON_ERROR_CLKT : constant bcm2835I2CReasonCodes := 2;
-   BCM2835_I2C_REASON_ERROR_DATA : constant bcm2835I2CReasonCodes := 4;  -- /usr/local/include/bcm2835.h:674
+   BCM2835_I2C_REASON_ERROR_DATA : constant bcm2835I2CReasonCodes := 4;  -- /usr/local/include/bcm2835.h:681
 
   -- Defines for ST
   -- GPIO register offsets from BCM2835_ST_BASE.
@@ -864,7 +824,7 @@ package bcm2835_h is
    BCM2835_PWM_CLOCK_DIVIDER_8 : constant bcm2835PWMClockDivider := 8;
    BCM2835_PWM_CLOCK_DIVIDER_4 : constant bcm2835PWMClockDivider := 4;
    BCM2835_PWM_CLOCK_DIVIDER_2 : constant bcm2835PWMClockDivider := 2;
-   BCM2835_PWM_CLOCK_DIVIDER_1 : constant bcm2835PWMClockDivider := 1;  -- /usr/local/include/bcm2835.h:748
+   BCM2835_PWM_CLOCK_DIVIDER_1 : constant bcm2835PWMClockDivider := 1;  -- /usr/local/include/bcm2835.h:755
 
   -- Historical name compatibility
   --/ \defgroup init Library initialisation and management
@@ -878,12 +838,12 @@ package bcm2835_h is
   --/ calling any other function may result in crashes or other failures.
   --/ Prints messages to stderr in case of errors.
   --/ \return 1 if successful else 0
-   function bcm2835_init return int;  -- /usr/local/include/bcm2835.h:772
+   function bcm2835_init return int;  -- /usr/local/include/bcm2835.h:779
    pragma Import (C, bcm2835_init, "bcm2835_init");
 
   --/ Close the library, deallocating any allocated memory and closing /dev/mem
   --/ \return 1 if successful else 0
-   function bcm2835_close return int;  -- /usr/local/include/bcm2835.h:776
+   function bcm2835_close return int;  -- /usr/local/include/bcm2835.h:783
    pragma Import (C, bcm2835_close, "bcm2835_close");
 
   --/ Sets the debug level of the library.
@@ -892,7 +852,7 @@ package bcm2835_h is
   --/ A value of 0, the default, causes normal operation.
   --/ Call this before calling bcm2835_init();
   --/ \param[in] debug The new debug level. 1 means debug
-   procedure bcm2835_set_debug (debug : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:784
+   procedure bcm2835_set_debug (debug : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:791
    pragma Import (C, bcm2835_set_debug, "bcm2835_set_debug");
 
   --/ @} // end of init
@@ -907,7 +867,7 @@ package bcm2835_h is
   --/ \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
   --/ \return the value read from the 32 bit register
   --/ \sa Physical Addresses
-   function bcm2835_peri_read (paddr : access stdint_h.uint32_t) return stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:800
+   function bcm2835_peri_read (paddr : access stdint_h.uint32_t) return stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:807
    pragma Import (C, bcm2835_peri_read, "bcm2835_peri_read");
 
   --/ Reads 32 bit value from a peripheral address without the read barrier
@@ -916,7 +876,7 @@ package bcm2835_h is
   --/ \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
   --/ \return the value read from the 32 bit register
   --/ \sa Physical Addresses
-   function bcm2835_peri_read_nb (paddr : access stdint_h.uint32_t) return stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:809
+   function bcm2835_peri_read_nb (paddr : access stdint_h.uint32_t) return stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:816
    pragma Import (C, bcm2835_peri_read_nb, "bcm2835_peri_read_nb");
 
   --/ Writes 32 bit value from a peripheral address
@@ -925,7 +885,7 @@ package bcm2835_h is
   --/ \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
   --/ \param[in] value The 32 bit value to write
   --/ \sa Physical Addresses
-   procedure bcm2835_peri_write (paddr : access stdint_h.uint32_t; value : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:818
+   procedure bcm2835_peri_write (paddr : access stdint_h.uint32_t; value : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:825
    pragma Import (C, bcm2835_peri_write, "bcm2835_peri_write");
 
   --/ Writes 32 bit value from a peripheral address without the write barrier
@@ -934,7 +894,7 @@ package bcm2835_h is
   --/ \param[in] paddr Physical address to read from. See BCM2835_GPIO_BASE etc.
   --/ \param[in] value The 32 bit value to write
   --/ \sa Physical Addresses
-   procedure bcm2835_peri_write_nb (paddr : access stdint_h.uint32_t; value : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:826
+   procedure bcm2835_peri_write_nb (paddr : access stdint_h.uint32_t; value : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:833
    pragma Import (C, bcm2835_peri_write_nb, "bcm2835_peri_write_nb");
 
   --/ Alters a number of bits in a 32 peripheral regsiter.
@@ -951,7 +911,7 @@ package bcm2835_h is
    procedure bcm2835_peri_set_bits
      (paddr : access stdint_h.uint32_t;
       value : stdint_h.uint32_t;
-      mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:839
+      mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:846
    pragma Import (C, bcm2835_peri_set_bits, "bcm2835_peri_set_bits");
 
   --/ @} // end of lowlevel
@@ -963,35 +923,35 @@ package bcm2835_h is
   --/ the pin as Input, Output or one of the 6 alternate functions.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \param[in] mode Mode to set the pin to, one of BCM2835_GPIO_FSEL_* from \ref bcm2835FunctionSelect
-   procedure bcm2835_gpio_fsel (pin : stdint_h.uint8_t; mode : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:851
+   procedure bcm2835_gpio_fsel (pin : stdint_h.uint8_t; mode : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:858
    pragma Import (C, bcm2835_gpio_fsel, "bcm2835_gpio_fsel");
 
   --/ Sets the specified pin output to 
   --/ HIGH.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \sa bcm2835_gpio_write()
-   procedure bcm2835_gpio_set (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:857
+   procedure bcm2835_gpio_set (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:864
    pragma Import (C, bcm2835_gpio_set, "bcm2835_gpio_set");
 
   --/ Sets the specified pin output to 
   --/ LOW.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \sa bcm2835_gpio_write()
-   procedure bcm2835_gpio_clr (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:863
+   procedure bcm2835_gpio_clr (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:870
    pragma Import (C, bcm2835_gpio_clr, "bcm2835_gpio_clr");
 
   --/ Sets any of the first 32 GPIO output pins specified in the mask to 
   --/ HIGH.
   --/ \param[in] mask Mask of pins to affect. Use eg: (1 << RPI_GPIO_P1_03) | (1 << RPI_GPIO_P1_05)
   --/ \sa bcm2835_gpio_write_multi()
-   procedure bcm2835_gpio_set_multi (mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:869
+   procedure bcm2835_gpio_set_multi (mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:876
    pragma Import (C, bcm2835_gpio_set_multi, "bcm2835_gpio_set_multi");
 
   --/ Sets any of the first 32 GPIO output pins specified in the mask to 
   --/ LOW.
   --/ \param[in] mask Mask of pins to affect. Use eg: (1 << RPI_GPIO_P1_03) | (1 << RPI_GPIO_P1_05)
   --/ \sa bcm2835_gpio_write_multi()
-   procedure bcm2835_gpio_clr_multi (mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:875
+   procedure bcm2835_gpio_clr_multi (mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:882
    pragma Import (C, bcm2835_gpio_clr_multi, "bcm2835_gpio_clr_multi");
 
   --/ Reads the current level on the specified 
@@ -999,7 +959,7 @@ package bcm2835_h is
   --/ is an input or an output.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \return the current level  either HIGH or LOW
-   function bcm2835_gpio_lev (pin : stdint_h.uint8_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:882
+   function bcm2835_gpio_lev (pin : stdint_h.uint8_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:889
    pragma Import (C, bcm2835_gpio_lev, "bcm2835_gpio_lev");
 
   --/ Event Detect Status.
@@ -1009,14 +969,14 @@ package bcm2835_h is
   --/ Clear the flag for a given pin by calling bcm2835_gpio_set_eds(pin);
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \return HIGH if the event detect status for the given pin is true.
-   function bcm2835_gpio_eds (pin : stdint_h.uint8_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:891
+   function bcm2835_gpio_eds (pin : stdint_h.uint8_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:898
    pragma Import (C, bcm2835_gpio_eds, "bcm2835_gpio_eds");
 
   --/ Sets the Event Detect Status register for a given pin to 1, 
   --/ which has the effect of clearing the flag. Use this afer seeing
   --/ an Event Detect Status on the pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_set_eds (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:897
+   procedure bcm2835_gpio_set_eds (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:904
    pragma Import (C, bcm2835_gpio_set_eds, "bcm2835_gpio_set_eds");
 
   --/ Enable Rising Edge Detect Enable for the specified pin.
@@ -1026,12 +986,12 @@ package bcm2835_h is
   --/ system clock and then it is looking for a ?011? pattern on the sampled signal. This
   --/ has the effect of suppressing glitches.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_ren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:906
+   procedure bcm2835_gpio_ren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:913
    pragma Import (C, bcm2835_gpio_ren, "bcm2835_gpio_ren");
 
   --/ Disable Rising Edge Detect Enable for the specified pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_clr_ren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:910
+   procedure bcm2835_gpio_clr_ren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:917
    pragma Import (C, bcm2835_gpio_clr_ren, "bcm2835_gpio_clr_ren");
 
   --/ Enable Falling Edge Detect Enable for the specified pin.
@@ -1041,34 +1001,34 @@ package bcm2835_h is
   --/ system clock and then it is looking for a ?100? pattern on the sampled signal. This
   --/ has the effect of suppressing glitches.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_fen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:919
+   procedure bcm2835_gpio_fen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:926
    pragma Import (C, bcm2835_gpio_fen, "bcm2835_gpio_fen");
 
   --/ Disable Falling Edge Detect Enable for the specified pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_clr_fen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:923
+   procedure bcm2835_gpio_clr_fen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:930
    pragma Import (C, bcm2835_gpio_clr_fen, "bcm2835_gpio_clr_fen");
 
   --/ Enable High Detect Enable for the specified pin.
   --/ When a HIGH level is detected on the pin, sets the appropriate pin in Event Detect Status.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_hen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:928
+   procedure bcm2835_gpio_hen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:935
    pragma Import (C, bcm2835_gpio_hen, "bcm2835_gpio_hen");
 
   --/ Disable High Detect Enable for the specified pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_clr_hen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:932
+   procedure bcm2835_gpio_clr_hen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:939
    pragma Import (C, bcm2835_gpio_clr_hen, "bcm2835_gpio_clr_hen");
 
   --/ Enable Low Detect Enable for the specified pin.
   --/ When a LOW level is detected on the pin, sets the appropriate pin in Event Detect Status.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_len (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:937
+   procedure bcm2835_gpio_len (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:944
    pragma Import (C, bcm2835_gpio_len, "bcm2835_gpio_len");
 
   --/ Disable Low Detect Enable for the specified pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_clr_len (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:941
+   procedure bcm2835_gpio_clr_len (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:948
    pragma Import (C, bcm2835_gpio_clr_len, "bcm2835_gpio_clr_len");
 
   --/ Enable Asynchronous Rising Edge Detect Enable for the specified pin.
@@ -1076,12 +1036,12 @@ package bcm2835_h is
   --/ Asynchronous means the incoming signal is not sampled by the system clock. As such
   --/ rising edges of very short duration can be detected.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_aren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:948
+   procedure bcm2835_gpio_aren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:955
    pragma Import (C, bcm2835_gpio_aren, "bcm2835_gpio_aren");
 
   --/ Disable Asynchronous Rising Edge Detect Enable for the specified pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_clr_aren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:952
+   procedure bcm2835_gpio_clr_aren (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:959
    pragma Import (C, bcm2835_gpio_clr_aren, "bcm2835_gpio_clr_aren");
 
   --/ Enable Asynchronous Falling Edge Detect Enable for the specified pin.
@@ -1089,12 +1049,12 @@ package bcm2835_h is
   --/ Asynchronous means the incoming signal is not sampled by the system clock. As such
   --/ falling edges of very short duration can be detected.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_afen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:959
+   procedure bcm2835_gpio_afen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:966
    pragma Import (C, bcm2835_gpio_afen, "bcm2835_gpio_afen");
 
   --/ Disable Asynchronous Falling Edge Detect Enable for the specified pin.
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
-   procedure bcm2835_gpio_clr_afen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:963
+   procedure bcm2835_gpio_clr_afen (pin : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:970
    pragma Import (C, bcm2835_gpio_clr_afen, "bcm2835_gpio_clr_afen");
 
   --/ Sets the Pull-up/down register for the given pin. This is
@@ -1102,7 +1062,7 @@ package bcm2835_h is
   --/ However, it is usually more convenient to use bcm2835_gpio_set_pud().
   --/ \param[in] pud The desired Pull-up/down mode. One of BCM2835_GPIO_PUD_* from bcm2835PUDControl
   --/ \sa bcm2835_gpio_set_pud()
-   procedure bcm2835_gpio_pud (pud : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:970
+   procedure bcm2835_gpio_pud (pud : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:977
    pragma Import (C, bcm2835_gpio_pud, "bcm2835_gpio_pud");
 
   --/ Clocks the Pull-up/down value set earlier by bcm2835_gpio_pud() into the pin.
@@ -1110,13 +1070,13 @@ package bcm2835_h is
   --/ \param[in] on HIGH to clock the value from bcm2835_gpio_pud() into the pin. 
   --/ LOW to remove the clock. 
   --/ \sa bcm2835_gpio_set_pud()
-   procedure bcm2835_gpio_pudclk (pin : stdint_h.uint8_t; on : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:977
+   procedure bcm2835_gpio_pudclk (pin : stdint_h.uint8_t; on : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:984
    pragma Import (C, bcm2835_gpio_pudclk, "bcm2835_gpio_pudclk");
 
   --/ Reads and returns the Pad Control for the given GPIO group.
   --/ \param[in] group The GPIO pad group number, one of BCM2835_PAD_GROUP_GPIO_*
   --/ \return Mask of bits from BCM2835_PAD_* from \ref bcm2835PadGroup
-   function bcm2835_gpio_pad (group : stdint_h.uint8_t) return stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:982
+   function bcm2835_gpio_pad (group : stdint_h.uint8_t) return stdint_h.uint32_t;  -- /usr/local/include/bcm2835.h:989
    pragma Import (C, bcm2835_gpio_pad, "bcm2835_gpio_pad");
 
   --/ Sets the Pad Control for the given GPIO group.
@@ -1124,7 +1084,7 @@ package bcm2835_h is
   --/ \param[in] control Mask of bits from BCM2835_PAD_* from \ref bcm2835PadGroup. Note 
   --/ that it is not necessary to include BCM2835_PAD_PASSWRD in the mask as this
   --/ is automatically included.
-   procedure bcm2835_gpio_set_pad (group : stdint_h.uint8_t; control : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:989
+   procedure bcm2835_gpio_set_pad (group : stdint_h.uint8_t; control : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:996
    pragma Import (C, bcm2835_gpio_set_pad, "bcm2835_gpio_set_pad");
 
   --/ Delays for the specified number of milliseconds.
@@ -1136,7 +1096,7 @@ package bcm2835_h is
   --/ there may still be a delay before the CPU becomes free to once
   --/ again execute the calling thread.
   --/ \param[in] millis Delay in milliseconds
-   procedure bcm2835_delay (millis : unsigned);  -- /usr/local/include/bcm2835.h:1000
+   procedure bcm2835_delay (millis : unsigned);  -- /usr/local/include/bcm2835.h:1007
    pragma Import (C, bcm2835_delay, "bcm2835_delay");
 
   --/ Delays for the specified number of microseconds.
@@ -1151,32 +1111,32 @@ package bcm2835_h is
   --/ It is reported that a delay of 0 microseconds on RaspberryPi will in fact
   --/ result in a delay of about 80 microseconds. Your mileage may vary.
   --/ \param[in] micros Delay in microseconds
-   procedure bcm2835_delayMicroseconds (micros : stdint_h.uint64_t);  -- /usr/local/include/bcm2835.h:1014
+   procedure bcm2835_delayMicroseconds (micros : stdint_h.uint64_t);  -- /usr/local/include/bcm2835.h:1021
    pragma Import (C, bcm2835_delayMicroseconds, "bcm2835_delayMicroseconds");
 
   --/ Sets the output state of the specified pin
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \param[in] on HIGH sets the output to HIGH and LOW to LOW.
-   procedure bcm2835_gpio_write (pin : stdint_h.uint8_t; on : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1019
+   procedure bcm2835_gpio_write (pin : stdint_h.uint8_t; on : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1026
    pragma Import (C, bcm2835_gpio_write, "bcm2835_gpio_write");
 
   --/ Sets any of the first 32 GPIO output pins specified in the mask to the state given by on
   --/ \param[in] mask Mask of pins to affect. Use eg: (1 << RPI_GPIO_P1_03) | (1 << RPI_GPIO_P1_05)
   --/ \param[in] on HIGH sets the output to HIGH and LOW to LOW.
-   procedure bcm2835_gpio_write_multi (mask : stdint_h.uint32_t; on : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1024
+   procedure bcm2835_gpio_write_multi (mask : stdint_h.uint32_t; on : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1031
    pragma Import (C, bcm2835_gpio_write_multi, "bcm2835_gpio_write_multi");
 
   --/ Sets the first 32 GPIO output pins specified in the mask to the value given by value
   --/ \param[in] value values required for each bit masked in by mask, eg: (1 << RPI_GPIO_P1_03) | (1 << RPI_GPIO_P1_05)
   --/ \param[in] mask Mask of pins to affect. Use eg: (1 << RPI_GPIO_P1_03) | (1 << RPI_GPIO_P1_05)
-   procedure bcm2835_gpio_write_mask (value : stdint_h.uint32_t; mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1029
+   procedure bcm2835_gpio_write_mask (value : stdint_h.uint32_t; mask : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1036
    pragma Import (C, bcm2835_gpio_write_mask, "bcm2835_gpio_write_mask");
 
   --/ Sets the Pull-up/down mode for the specified pin. This is more convenient than
   --/ clocking the mode in with bcm2835_gpio_pud() and bcm2835_gpio_pudclk().
   --/ \param[in] pin GPIO number, or one of RPI_GPIO_P1_* from \ref RPiGPIOPin.
   --/ \param[in] pud The desired Pull-up/down mode. One of BCM2835_GPIO_PUD_* from bcm2835PUDControl
-   procedure bcm2835_gpio_set_pud (pin : stdint_h.uint8_t; pud : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1035
+   procedure bcm2835_gpio_set_pud (pin : stdint_h.uint8_t; pud : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1042
    pragma Import (C, bcm2835_gpio_set_pud, "bcm2835_gpio_set_pud");
 
   --/ @} 
@@ -1190,13 +1150,13 @@ package bcm2835_h is
   --/ You should call bcm2835_spi_end() when all SPI funcitons are complete to return the pins to 
   --/ their default functions
   --/ \sa  bcm2835_spi_end()
-   procedure bcm2835_spi_begin;  -- /usr/local/include/bcm2835.h:1050
+   procedure bcm2835_spi_begin;  -- /usr/local/include/bcm2835.h:1057
    pragma Import (C, bcm2835_spi_begin, "bcm2835_spi_begin");
 
   --/ End SPI operations.
   --/ SPI0 pins P1-19 (MOSI), P1-21 (MISO), P1-23 (CLK), P1-24 (CE0) and P1-26 (CE1)
   --/ are returned to their default INPUT behaviour.
-   procedure bcm2835_spi_end;  -- /usr/local/include/bcm2835.h:1055
+   procedure bcm2835_spi_end;  -- /usr/local/include/bcm2835.h:1062
    pragma Import (C, bcm2835_spi_end, "bcm2835_spi_end");
 
   --/ Sets the SPI bit order
@@ -1204,21 +1164,21 @@ package bcm2835_h is
   --/ Defaults to 
   --/ \param[in] order The desired bit order, one of BCM2835_SPI_BIT_ORDER_*, 
   --/ see \ref bcm2835SPIBitOrder
-   procedure bcm2835_spi_setBitOrder (order : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1062
+   procedure bcm2835_spi_setBitOrder (order : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1069
    pragma Import (C, bcm2835_spi_setBitOrder, "bcm2835_spi_setBitOrder");
 
   --/ Sets the SPI clock divider and therefore the 
   --/ SPI clock speed. 
   --/ \param[in] divider The desired SPI clock divider, one of BCM2835_SPI_CLOCK_DIVIDER_*, 
   --/ see \ref bcm2835SPIClockDivider
-   procedure bcm2835_spi_setClockDivider (divider : stdint_h.uint16_t);  -- /usr/local/include/bcm2835.h:1068
+   procedure bcm2835_spi_setClockDivider (divider : stdint_h.uint16_t);  -- /usr/local/include/bcm2835.h:1075
    pragma Import (C, bcm2835_spi_setClockDivider, "bcm2835_spi_setClockDivider");
 
   --/ Sets the SPI data mode
   --/ Sets the clock polariy and phase
   --/ \param[in] mode The desired data mode, one of BCM2835_SPI_MODE*, 
   --/ see \ref bcm2835SPIMode
-   procedure bcm2835_spi_setDataMode (mode : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1074
+   procedure bcm2835_spi_setDataMode (mode : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1081
    pragma Import (C, bcm2835_spi_setDataMode, "bcm2835_spi_setDataMode");
 
   --/ Sets the chip select pin(s)
@@ -1226,7 +1186,7 @@ package bcm2835_h is
   --/ transfer.
   --/ \param[in] cs Specifies the CS pins(s) that are used to activate the desired slave. 
   --/   One of BCM2835_SPI_CS*, see \ref bcm2835SPIChipSelect
-   procedure bcm2835_spi_chipSelect (cs : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1081
+   procedure bcm2835_spi_chipSelect (cs : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1088
    pragma Import (C, bcm2835_spi_chipSelect, "bcm2835_spi_chipSelect");
 
   --/ Sets the chip select pin polarity for a given pin
@@ -1236,7 +1196,7 @@ package bcm2835_h is
   --/ return to the complement (inactive) value.
   --/ \param[in] cs The chip select pin to affect
   --/ \param[in] active Whether the chip select pin is to be active HIGH
-   procedure bcm2835_spi_setChipSelectPolarity (cs : stdint_h.uint8_t; active : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1090
+   procedure bcm2835_spi_setChipSelectPolarity (cs : stdint_h.uint8_t; active : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1097
    pragma Import (C, bcm2835_spi_setChipSelectPolarity, "bcm2835_spi_setChipSelectPolarity");
 
   --/ Transfers one byte to and from the currently selected SPI slave.
@@ -1248,7 +1208,7 @@ package bcm2835_h is
   --/ \param[in] value The 8 bit data byte to write to MOSI
   --/ \return The 8 bit byte simultaneously read from  MISO
   --/ \sa bcm2835_spi_transfern()
-   function bcm2835_spi_transfer (value : stdint_h.uint8_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1101
+   function bcm2835_spi_transfer (value : stdint_h.uint8_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1108
    pragma Import (C, bcm2835_spi_transfer, "bcm2835_spi_transfer");
 
   --/ Transfers any number of bytes to and from the currently selected SPI slave.
@@ -1264,7 +1224,7 @@ package bcm2835_h is
    procedure bcm2835_spi_transfernb
      (tbuf : Interfaces.C.Strings.chars_ptr;
       rbuf : Interfaces.C.Strings.chars_ptr;
-      len : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1113
+      len : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1120
    pragma Import (C, bcm2835_spi_transfernb, "bcm2835_spi_transfernb");
 
   --/ Transfers any number of bytes to and from the currently selected SPI slave
@@ -1273,7 +1233,7 @@ package bcm2835_h is
   --/ \param[in,out] buf Buffer of bytes to send. Received bytes will replace the contents
   --/ \param[in] len Number of bytes int eh buffer, and the number of bytes to send/received
   --/ \sa bcm2835_spi_transfer()
-   procedure bcm2835_spi_transfern (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1121
+   procedure bcm2835_spi_transfern (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1128
    pragma Import (C, bcm2835_spi_transfern, "bcm2835_spi_transfern");
 
   --/ Transfers any number of bytes to the currently selected SPI slave.
@@ -1281,7 +1241,7 @@ package bcm2835_h is
   --/ during the transfer.
   --/ \param[in] buf Buffer of bytes to send.
   --/ \param[in] len Number of bytes in the tbuf buffer, and the number of bytes to send
-   procedure bcm2835_spi_writenb (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1128
+   procedure bcm2835_spi_writenb (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1135
    pragma Import (C, bcm2835_spi_writenb, "bcm2835_spi_writenb");
 
   --/ @}
@@ -1295,24 +1255,24 @@ package bcm2835_h is
   --/ You should call bcm2835_i2c_end() when all I2C functions are complete to return the pins to
   --/ their default functions
   --/ \sa  bcm2835_i2c_end()
-   procedure bcm2835_i2c_begin;  -- /usr/local/include/bcm2835.h:1143
+   procedure bcm2835_i2c_begin;  -- /usr/local/include/bcm2835.h:1150
    pragma Import (C, bcm2835_i2c_begin, "bcm2835_i2c_begin");
 
   --/ End I2C operations.
   --/ I2C pins P1-03 (SDA) and P1-05 (SCL)
   --/ are returned to their default INPUT behaviour.
-   procedure bcm2835_i2c_end;  -- /usr/local/include/bcm2835.h:1148
+   procedure bcm2835_i2c_end;  -- /usr/local/include/bcm2835.h:1155
    pragma Import (C, bcm2835_i2c_end, "bcm2835_i2c_end");
 
   --/ Sets the I2C slave address.
   --/ \param[in] addr The I2C slave address.
-   procedure bcm2835_i2c_setSlaveAddress (addr : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1152
+   procedure bcm2835_i2c_setSlaveAddress (addr : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1159
    pragma Import (C, bcm2835_i2c_setSlaveAddress, "bcm2835_i2c_setSlaveAddress");
 
   --/ Sets the I2C clock divider and therefore the I2C clock speed.
   --/ \param[in] divider The desired I2C clock divider, one of BCM2835_I2C_CLOCK_DIVIDER_*,
   --/ see \ref bcm2835I2CClockDivider
-   procedure bcm2835_i2c_setClockDivider (divider : stdint_h.uint16_t);  -- /usr/local/include/bcm2835.h:1157
+   procedure bcm2835_i2c_setClockDivider (divider : stdint_h.uint16_t);  -- /usr/local/include/bcm2835.h:1164
    pragma Import (C, bcm2835_i2c_setClockDivider, "bcm2835_i2c_setClockDivider");
 
   --/ Sets the I2C clock divider by converting the baudrate parameter to
@@ -1320,7 +1280,7 @@ package bcm2835_h is
   --/ For the I2C standard 100khz you would set baudrate to 100000
   --/ The use of baudrate corresponds to its use in the I2C kernel device
   --/ driver. (Of course, bcm2835 has nothing to do with the kernel driver)
-   procedure bcm2835_i2c_set_baudrate (baudrate : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1164
+   procedure bcm2835_i2c_set_baudrate (baudrate : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1171
    pragma Import (C, bcm2835_i2c_set_baudrate, "bcm2835_i2c_set_baudrate");
 
   --/ Transfers any number of bytes to the currently selected I2C slave.
@@ -1328,7 +1288,7 @@ package bcm2835_h is
   --/ \param[in] buf Buffer of bytes to send.
   --/ \param[in] len Number of bytes in the buf buffer, and the number of bytes to send.
   --/ \return reason see \ref bcm2835I2CReasonCodes
-   function bcm2835_i2c_write (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1171
+   function bcm2835_i2c_write (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1178
    pragma Import (C, bcm2835_i2c_write, "bcm2835_i2c_write");
 
   --/ Transfers any number of bytes from the currently selected I2C slave.
@@ -1336,7 +1296,7 @@ package bcm2835_h is
   --/ \param[in] buf Buffer of bytes to receive.
   --/ \param[in] len Number of bytes in the buf buffer, and the number of bytes to received.
   --/ \return reason see \ref bcm2835I2CReasonCodes
-   function bcm2835_i2c_read (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1178
+   function bcm2835_i2c_read (buf : Interfaces.C.Strings.chars_ptr; len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1185
    pragma Import (C, bcm2835_i2c_read, "bcm2835_i2c_read");
 
   --/ Allows reading from I2C slaves that require a repeated start (without any prior stop)
@@ -1355,8 +1315,24 @@ package bcm2835_h is
    function bcm2835_i2c_read_register_rs
      (regaddr : Interfaces.C.Strings.chars_ptr;
       buf : Interfaces.C.Strings.chars_ptr;
-      len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1193
+      len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1200
    pragma Import (C, bcm2835_i2c_read_register_rs, "bcm2835_i2c_read_register_rs");
+
+  --/ Allows sending an arbitrary number of bytes to I2C slaves before issuing a repeated
+  --/ start (with no prior stop) and reading a response.
+  --/ Necessary for devices that require such behavior, such as the MLX90620.
+  --/ Will write to and read from the slave previously set by \sa bcm2835_i2c_setSlaveAddress
+  --/ \param[in] cmds Buffer containing the bytes to send before the repeated start condition.
+  --/ \param[in] cmds_len Number of bytes to send from cmds buffer
+  --/ \param[in] buf Buffer of bytes to receive.
+  --/ \param[in] buf_len Number of bytes to receive in the buf buffer.
+  --/ \return reason see \ref bcm2835I2CReasonCodes
+   function bcm2835_i2c_write_read_rs
+     (cmds : Interfaces.C.Strings.chars_ptr;
+      cmds_len : stdint_h.uint32_t;
+      buf : Interfaces.C.Strings.chars_ptr;
+      buf_len : stdint_h.uint32_t) return stdint_h.uint8_t;  -- /usr/local/include/bcm2835.h:1211
+   pragma Import (C, bcm2835_i2c_write_read_rs, "bcm2835_i2c_write_read_rs");
 
   --/ @}
   --/ \defgroup st System Timer access
@@ -1364,13 +1340,13 @@ package bcm2835_h is
   --/ @{
   --/ Read the System Timer Counter register.
   --/ \return the value read from the System Timer Counter Lower 32 bits register
-   function bcm2835_st_read return stdint_h.uint64_t;  -- /usr/local/include/bcm2835.h:1203
+   function bcm2835_st_read return stdint_h.uint64_t;  -- /usr/local/include/bcm2835.h:1221
    pragma Import (C, bcm2835_st_read, "bcm2835_st_read");
 
   --/ Delays for the specified number of microseconds with offset.
   --/ \param[in] offset_micros Offset in microseconds
   --/ \param[in] micros Delay in microseconds
-   procedure bcm2835_st_delay (offset_micros : stdint_h.uint64_t; micros : stdint_h.uint64_t);  -- /usr/local/include/bcm2835.h:1208
+   procedure bcm2835_st_delay (offset_micros : stdint_h.uint64_t; micros : stdint_h.uint64_t);  -- /usr/local/include/bcm2835.h:1226
    pragma Import (C, bcm2835_st_delay, "bcm2835_st_delay");
 
   --/ @} 
@@ -1383,8 +1359,8 @@ package bcm2835_h is
   --/ Sets the PWM clock divisor, 
   --/ to control the basic PWM pulse widths.
   --/ \param[in] divisor Divides the basic 19.2MHz PWM clock. You can use one of the common
-  --/ values BCM2835_PWM_CLOCK_DIVIDER_* in \ref bcm2835PWMClockDivider.
-   procedure bcm2835_pwm_set_clock (divisor : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1223
+  --/ values BCM2835_PWM_CLOCK_DIVIDER_* in \ref bcm2835PWMClockDivider
+   procedure bcm2835_pwm_set_clock (divisor : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1241
    pragma Import (C, bcm2835_pwm_set_clock, "bcm2835_pwm_set_clock");
 
   --/ Sets the mode of the given PWM channel,
@@ -1395,14 +1371,14 @@ package bcm2835_h is
    procedure bcm2835_pwm_set_mode
      (channel : stdint_h.uint8_t;
       markspace : stdint_h.uint8_t;
-      enabled : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1230
+      enabled : stdint_h.uint8_t);  -- /usr/local/include/bcm2835.h:1248
    pragma Import (C, bcm2835_pwm_set_mode, "bcm2835_pwm_set_mode");
 
   --/ Sets the maximum range of the PWM output.
   --/ The data value can vary between 0 and this range to control PWM output
   --/ \param[in] channel The PWM channel. 0 or 1.
   --/ \param[in] range The maximum value permitted for DATA.
-   procedure bcm2835_pwm_set_range (channel : stdint_h.uint8_t; c_range : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1236
+   procedure bcm2835_pwm_set_range (channel : stdint_h.uint8_t; c_range : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1254
    pragma Import (C, bcm2835_pwm_set_range, "bcm2835_pwm_set_range");
 
   --/ Sets the PWM pulse ratio to emit to DATA/RANGE, 
@@ -1410,7 +1386,7 @@ package bcm2835_h is
   --/ \param[in] channel The PWM channel. 0 or 1.
   --/ \param[in] data Controls the PWM output ratio as a fraction of the range. 
   --/  Can vary from 0 to RANGE.
-   procedure bcm2835_pwm_set_data (channel : stdint_h.uint8_t; data : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1243
+   procedure bcm2835_pwm_set_data (channel : stdint_h.uint8_t; data : stdint_h.uint32_t);  -- /usr/local/include/bcm2835.h:1261
    pragma Import (C, bcm2835_pwm_set_data, "bcm2835_pwm_set_data");
 
   --/ @} 
@@ -1426,4 +1402,10 @@ package bcm2835_h is
   --/ Shows how to use SPI interface to transfer a number of bytes to and from an SPI device
   --/ @example pwm.c
   --/ Shows how to use PWM to control GPIO pins
+  --/ @example i2c.c
+  --/ Command line utility for executing i2c commands with the 
+  --/ Broadcom bcm2835. Contributed by Shahrooz Shahparnia.
+  --/ example gpio.c
+  --/ Command line utility for executing gpio commands with the 
+  --/   Broadcom bcm2835. Contributed by Shahrooz Shahparnia.
 end bcm2835_h;
