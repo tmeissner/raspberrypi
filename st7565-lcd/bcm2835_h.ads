@@ -1,3 +1,24 @@
+-- BCM2835 library Ada bindings
+-- derived from /usr/local/include/bcm2835.h
+-- with the GNAT compiler:
+--
+-- $ g++ -c -fdump-ada-spec -C /usr/local/include/bcm2835.h
+-- $ gcc -c -gnat05 *.ads
+-- 
+-- see for more at: http://www.adacore.com/adaanswers/gems/gem-59/#sthash.eDZ2bNEb.dpuf
+--
+-- we get two files:
+-- bcm2835_h.ads -> bcm2835.h bindings
+-- stdint_h.ads  -> stdint.h bindings
+--
+-- some #defines couldn't be transformed by GNAT, so we have to do that manually
+-- they are marked and commented out in the generated file
+-- I've converted them by myself in this file, they are marked with the
+-- 'manually converted' comment before (first expressions after the big comment block at the bgin of the package)
+
+
+
+
 with Interfaces.C; use Interfaces.C;
 with stdint_h;
 with Interfaces.C.Strings;
