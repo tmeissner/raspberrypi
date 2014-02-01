@@ -274,7 +274,7 @@ package st7565lcd is
     mask_exception : exception;
     bmp_exception  : exception;
 
-    exception_head : string := "raspi-lcd version 0.1, (c) 2014 by tmeissner";
+    exception_head : string := "raspilcd version 0.1.1, (c) 2014 by tmeissner";
 
 
     -- procedure declarations
