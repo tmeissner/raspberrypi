@@ -1,0 +1,5 @@
+h1. "raspiHEAD":https://github.com/tmeissner/raspi-head
+
+p(. A headphone amplifier, primary for the Raspberry Pi
+
+!https://lh3.googleusercontent.com/-wtDZHeMiXzs/UHCdNT-AHPI/AAAAAAAABxk/8uwVV7DYEKM/s685/PA060588!
