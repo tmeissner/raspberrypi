@@ -16,7 +16,6 @@
 
 
 
-with Ada.Text_IO;
 with bcm2835_h;
 with st7565lcd;
 
@@ -34,7 +33,6 @@ procedure raspilcd is
 
 
     -- shorter names for packages
-    package IO  renames Ada.Text_IO;
     package LCD renames st7565lcd;
     package IOS renames Ada.Streams.Stream_IO;
 
@@ -49,20 +47,22 @@ procedure raspilcd is
     lcd_data : LCD.t_lcd_array;
 
     -- exception handling
-    cli_exception : exception;
+    cli_exception     : exception;
 
 
 begin
 
 
-    -- no picture given
-    if Argument_Count /= 1 then
+    -- command line argument error
+    if Argument_Count = 0 or Argument_Count > 2 or
+       (Argument_Count = 1 and Argument(1)  = "-i") or
+       (Argument_Count = 2 and Argument(1) /= "-i")  then
         raise cli_exception;
     end if;
 
     -- open picture file
     declare
-        filename : string := Argument(1);
+        filename : string := Argument(Argument_Count);
     begin
         IOS.Open(My_File, IOS.In_File, filename);
         My_File_Access := IOS.Stream(My_File);
@@ -71,10 +71,13 @@ begin
     -- read in picture
     LCD.read_bmp(file => My_File, file_access => My_File_Access, bmp_picture => bmp_picture);
 
-    --Put_Line("Width:       " & Integer'Image(picture_header.biWidth));
-    --Put_Line("Height:      " & Integer'Image(picture_header.biHeight));
-    --Put_Line("Color Depth: " & Integer'Image(Integer(picture_header.biBitCount)));
-    --Put_Line("Compression: " & Integer'Image(Integer(picture_header.biCompression)));
+    -- print bmp header info
+    if Argument(1) = "-i" then
+        put_Line("  width:       " & Integer'Image(bmp_picture.header.biWidth));
+        put_Line("  height:      " & Integer'Image(bmp_picture.header.biHeight));
+        put_Line("  color depth: " & Integer'Image(Integer(bmp_picture.header.biBitCount)));
+        put_Line("  compression: " & Integer'Image(Integer(bmp_picture.header.biCompression)));
+    end if;
 
     -- close picture file
     Ada.Streams.Stream_IO.Close(My_File);
@@ -85,11 +88,7 @@ begin
 
     -- load bcm2835 lib
     -- print picture and some text on lcd
-    if integer(bcm2835_h.bcm2835_init) = 0 then
-
-        IO.Put_Line("Error while initializing BCM2835 library");
-    
-    else
+    if integer(bcm2835_h.bcm2835_init) /= 0 then
 
         LCD.io_init;
  
@@ -106,7 +105,7 @@ begin
 
         -- close library
         if integer(bcm2835_h.bcm2835_close) = 0 then
-            IO.Put_Line("Error while closing BCM2835 library");
+            put_line("Error while closing BCM2835 library");
         end if;
 
     end if;
@@ -114,15 +113,19 @@ begin
 
     -- exception handling
     exception
-        when cli_exception =>
+        when cli_exception | CONSTRAINT_ERROR =>
             put_line(LCD.exception_head);
-            put_line("usage: ./raspitest BMP-FILE (as root)");
+            put_line("usage: ./raspilcd [option] BMP-FILE (as root)");
+            put_line("   -i: show bmp info");
         when LCD.bmp_exception =>
             put_line(LCD.exception_head);
             put_line("error: malformed BMP-FILE (valid: 128x64, no compression, 32bpp)");
         when LCD.mask_exception =>
             put_line(LCD.exception_head);
             put_line("error: malformed BMP color mask");
+        when NAME_ERROR =>
+            put_line(LCD.exception_head);
+            put_line("error: Could not find bmp file");
 
 
 end raspilcd;
