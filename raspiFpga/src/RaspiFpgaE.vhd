@@ -123,6 +123,10 @@ architecture rtl of RaspiFpgaE is
   signal s_sys_clk : std_logic;
   signal s_sys_rst : std_logic := '1';
 
+  signal s_spi_sclk : std_logic;
+  signal s_spi_miso : std_logic;
+  signal s_spi_mosi : std_logic;
+
   --+ Wishbone bus signals
   signal s_wb_clk        : std_logic;
   signal s_wb_rst        : std_logic;
@@ -182,6 +186,10 @@ begin
   end process ResetP;
 
 
+  s_spi_sclk <= SpiSclk_i;
+  s_spi_miso <= SpiSte_i;
+  s_spi_mosi <= SpiMosi_i;
+
   --+ EFB SPI slave instance
   i_EfbSpiSlave : EfbSpiSlave
     port map (
@@ -194,9 +202,9 @@ begin
       wb_dat_i => s_wb_master_dat,
       wb_dat_o => s_wb_slave_dat,
       wb_ack_o => s_wb_ack,
-      spi_clk  => SpiSclk_i,
-      spi_miso => SpiMiso_o,
-      spi_mosi => SpiMosi_i,
+      spi_clk  => s_spi_sclk,
+      spi_miso => s_spi_miso,
+      spi_mosi => s_spi_mosi,
       spi_scsn => SpiSte_i,
       spi_irq  => s_efb_irq
     );
@@ -246,7 +254,7 @@ begin
       LocalRen_o    => s_local_ren,
       LocalAdress_o => s_local_adr,
       LocalData_i   => s_local_read_data,
-      LocalData_o   => s_local_write_data
+      LocalData_o   => s_local_write_data,
       LocalAck_i    => s_local_ack,
       LocalError_i  => '0',
       --+ EFB if
