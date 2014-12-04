@@ -10,10 +10,10 @@ library machxo2;
 entity RaspiFpgaE is
   port (
     --+ SPI slave if
-    SpiSclk_i    : in  std_logic;
-    SpiSte_i     : in  std_logic;
-    SpiMosi_i    : in  std_logic;
-    SpiMiso_o    : out std_logic;
+    SpiSclk_i    : inout std_logic;
+    SpiSte_i     : in    std_logic;
+    SpiMosi_i    : inout std_logic;
+    SpiMiso_o    : inout std_logic;
     --* interrupt line to raspi
     RaspiIrq_o   : out std_logic
   );
@@ -104,7 +104,7 @@ architecture rtl of RaspiFpgaE is
   component OSCH is
     -- synthesis translate_off
     generic (
-      NOM_FREQ : string := "2.56"
+      NOM_FREQ : string := "26.60"
     );
     -- synthesis translate_on
     port (
@@ -160,7 +160,7 @@ begin
     generic map (
       NOM_FREQ => "26.60"
     )
-    -- syntheses on
+    -- synthesis on
     port map (
       STDBY    => '0',
       OSC      => s_sys_clk,
@@ -186,10 +186,6 @@ begin
   end process ResetP;
 
 
-  s_spi_sclk <= SpiSclk_i;
-  s_spi_miso <= SpiSte_i;
-  s_spi_mosi <= SpiMosi_i;
-
   --+ EFB SPI slave instance
   i_EfbSpiSlave : EfbSpiSlave
     port map (
@@ -202,9 +198,9 @@ begin
       wb_dat_i => s_wb_master_dat,
       wb_dat_o => s_wb_slave_dat,
       wb_ack_o => s_wb_ack,
-      spi_clk  => s_spi_sclk,
-      spi_miso => s_spi_miso,
-      spi_mosi => s_spi_mosi,
+      spi_clk  => SpiSclk_i,
+      spi_miso => SpiMiso_o,
+      spi_mosi => SpiMosi_i,
       spi_scsn => SpiSte_i,
       spi_irq  => s_efb_irq
     );
@@ -228,7 +224,7 @@ begin
       --+ wishbone inputs
       WbDat_i       => s_wb_slave_dat,
       WbAck_i       => s_wb_ack,
-      WbErr_i       => open,
+      WbErr_i       => '0',
       --+ local register if
       LocalWen_i    => s_local_wen,
       LocalRen_i    => s_local_ren,
@@ -261,5 +257,7 @@ begin
       EfbSpiIrq_i   => s_efb_irq
     );
 
+
+  RaspiIrq_o <= '0';
 
 end architecture rtl;
