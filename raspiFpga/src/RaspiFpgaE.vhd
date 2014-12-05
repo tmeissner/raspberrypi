@@ -2,8 +2,8 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-library machxo2;
-  use machxo2.components.all;
+--library machxo2;
+--  use machxo2.components.all;
 
 
 
@@ -57,10 +57,6 @@ architecture rtl of RaspiFpgaE is
 
 
   component RaspiFpgaCtrlE is
-    generic (
-      G_ADR_WIDTH  : positive := 8;  --* address bus width
-      G_DATA_WIDTH : positive := 8   --* data bus width
-    );
     port (
       --+ System if
       Rst_n_i       : in  std_logic;
@@ -68,9 +64,9 @@ architecture rtl of RaspiFpgaE is
       --+ local register if
       LocalWen_o    : out std_logic;
       LocalRen_o    : out std_logic;
-      LocalAdress_o : out std_logic_vector(G_ADR_WIDTH-1 downto 0);
-      LocalData_i   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
-      LocalData_o   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+      LocalAdress_o : out std_logic_vector(7 downto 0);
+      LocalData_i   : in  std_logic_vector(7 downto 0);
+      LocalData_o   : out std_logic_vector(7 downto 0);
       LocalAck_i    : in  std_logic;
       LocalError_i  : in  std_logic;
       --+ EFB if
@@ -237,10 +233,6 @@ begin
 
 
   i_RaspiFpgaCtrlE : RaspiFpgaCtrlE
-    generic map (
-      G_ADR_WIDTH  => 8,
-      G_DATA_WIDTH => 8
-    )
     port map (
       --+ System if
       Rst_n_i       => s_sys_rst,
@@ -259,5 +251,6 @@ begin
 
 
   RaspiIrq_o <= '0';
+
 
 end architecture rtl;

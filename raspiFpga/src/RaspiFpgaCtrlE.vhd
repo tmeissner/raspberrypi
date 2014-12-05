@@ -1,13 +1,10 @@
 library ieee;
   use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
 
 
 entity RaspiFpgaCtrlE is
-  generic (
-    G_ADR_WIDTH  : positive := 8;  --* address bus width
-    G_DATA_WIDTH : positive := 8   --* data bus width
-  );
   port (
     --+ System if
     Rst_n_i       : in  std_logic;
@@ -15,9 +12,9 @@ entity RaspiFpgaCtrlE is
     --+ local register if
     LocalWen_o    : out std_logic;
     LocalRen_o    : out std_logic;
-    LocalAdress_o : out std_logic_vector(G_ADR_WIDTH-1 downto 0);
-    LocalData_i   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
-    LocalData_o   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    LocalAdress_o : out std_logic_vector(7 downto 0);
+    LocalData_i   : in  std_logic_vector(7 downto 0);
+    LocalData_o   : out std_logic_vector(7 downto 0);
     LocalAck_i    : in  std_logic;
     LocalError_i  : in  std_logic;
     --+ EFB if
@@ -42,64 +39,94 @@ architecture rtl of RaspiFpgaCtrlE is
   constant C_SPIIRQ   : std_logic_vector(7 downto 0) := x"5C";  --* interrupt request
   constant C_SPIIRQEN : std_logic_vector(7 downto 0) := x"5D";  --* interrupt request enable
 
-  --+ init fsm types and signals
-  type t_init_fsm is (IDLE, SET, ACK, INIT_DONE);
-  signal s_init_fsm : t_init_fsm;
 
-  signal s_init_done   : boolean;
-  signal s_init_wen    : std_logic;
-  signal s_init_adress : std_logic_vector(G_ADR_WIDTH-1 downto 0);
-  signal s_init_data   : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  type t_cmdctrl_fsm is (IDLE, INIT_SET, INIT_ACK, TXDR_SET, TXDR_ACK, INT_WAIT,
+                         RXDR_SET, RXDR_ACK);
 
-  signal s_ctl_wen    : std_logic;
-  signal s_ctl_adress : std_logic_vector(G_ADR_WIDTH-1 downto 0);
-  signal s_ctl_data   : std_logic_vector(G_DATA_WIDTH-1 downto 0);
+  signal s_cmdctrl_fsm : t_cmdctrl_fsm;
 
-  type t_adress_array is array (natural range <>) of std_logic_vector(G_ADR_WIDTH-1 downto 0);
-  constant C_INIT_ADR  : t_adress_array := (C_SPICR1, C_SPICR2, C_SPIIRQEN);
+  type t_wb_master is record
+    adr  : std_logic_vector(7 downto 0);
+    data : std_logic_vector(7 downto 0);
+  end record t_wb_master;
 
-  type t_data_array is array (natural range <>) of std_logic_vector(G_DATA_WIDTH-1 downto 0);
-  constant C_INIT_DATA : t_data_array := (x"80", x"00", x"18");
+  type t_wb_master_array is array (natural range <>) of t_wb_master;
 
-  signal s_init_cnt : natural range 0 to C_INIT_ADR'length-1;
+  constant C_INIT : t_wb_master_array := ((C_SPICR1,   x"80"),
+                                          (C_SPICR2,   x"00"),
+                                          (C_SPIIRQEN, x"08"));
+
+  signal s_init_cnt : natural range 0 to C_INIT'length;
+
+  type t_byte_array is array (natural range <>) of std_logic_vector(7 downto 0);
+  signal s_register : t_byte_array(0 to 127);
+
+  signal s_register_we      : std_logic;
+  signal s_register_address : natural range s_register'range;
+
+  type t_spi_frame is (NOP, HEADER, WRITE_DATA, READ_DATA);
+  signal s_spi_frame : t_spi_frame;
 
 
 begin
 
 
-  LocalWen_o    <= s_init_wen    when not(s_init_done) else s_ctl_wen;
-  LocalAdress_o <= s_init_adress when not(s_init_done) else s_ctl_adress;
-  LocalData_o   <= s_init_data   when not(s_init_done) else s_ctl_data;
+  --+ FSM to write/request data from the wishbone master
+  --+ Combinatoral outputs
+  LocalWen_o    <= '1' when s_cmdctrl_fsm = INIT_SET or s_cmdctrl_fsm = TXDR_SET else '0';
+  LocalRen_o    <= '1' when s_cmdctrl_fsm = RXDR_SET else '0';
+  LocalAdress_o <= C_INIT(s_init_cnt).adr when s_cmdctrl_fsm = INIT_SET else
+                   C_SPITXDR              when s_cmdctrl_fsm = TXDR_SET else
+                   C_SPIRXDR              when s_cmdctrl_fsm = RXDR_SET else
+                   (others => '0');
+  LocalData_o   <= C_INIT(s_init_cnt).data        when s_cmdctrl_fsm = INIT_SET                             else
+                   s_register(s_register_address) when s_cmdctrl_fsm = TXDR_SET and s_spi_frame = READ_DATA else
+                   x"FF";
 
 
-  InitP : process (Clk_i) is
+  CmdCtrlP : process (Clk_i) is
   begin
     if (rising_edge(Clk_i)) then
       if (Rst_n_i = '0') then
-        s_init_cnt <= 0;
-        s_init_fsm <= IDLE;
+        s_cmdctrl_fsm <= IDLE;
       else
-        FsmC : case s_init_fsm is
+        FsmC : case s_cmdctrl_fsm is
 
           when IDLE =>
-            s_init_cnt <= 0;
-            s_init_fsm <= SET;
+            s_cmdctrl_fsm <= INIT_SET;
 
-          when SET =>
-            s_init_fsm <= ACK;
+          when INIT_SET =>
+            s_cmdctrl_fsm <= INIT_ACK;
 
-          when ACK =>
+          when INIT_ACK =>
             if (LocalAck_i = '1') then
-              if (s_init_cnt = C_INIT_ADR'length-1) then
-                s_init_fsm <= INIT_DONE;
+              if (s_init_cnt = C_INIT'length) then
+                s_cmdctrl_fsm <= TXDR_SET;
               else
-                s_init_cnt <= s_init_cnt + 1;
-                s_init_fsm <= SET;
+                s_cmdctrl_fsm <= INIT_SET;
               end if;
             end if;
 
-          when INIT_DONE =>
-            null;
+          when TXDR_SET =>
+            s_cmdctrl_fsm <= TXDR_ACK;
+
+          when TXDR_ACK =>
+            if (LocalAck_i = '1') then
+              s_cmdctrl_fsm <= INT_WAIT;
+            end if;
+
+          when INT_WAIT =>
+            if (EfbSpiIrq_i = '1') then
+              s_cmdctrl_fsm <= RXDR_SET;
+            end if;
+
+          when RXDR_SET =>
+            s_cmdctrl_fsm <= RXDR_ACK;
+
+          when RXDR_ACK =>
+            if (LocalAck_i = '1') then
+              s_cmdctrl_fsm <= TXDR_SET;
+            end if;
 
           when others =>
             null;
@@ -107,15 +134,68 @@ begin
         end case FsmC;
       end if;
     end if;
-  end process InitP;
+  end process CmdCtrlP;
 
 
-  s_init_wen    <= '1' when s_init_fsm = SET else '0';
-  s_init_adress <= C_INIT_ADR(s_init_cnt);
-  s_init_data   <= C_INIT_DATA(s_init_cnt);
+  CmdRegisterP : process (Clk_i) is
+  begin
+    if (rising_edge(Clk_i)) then
+      if (Rst_n_i = '0') then
+        s_init_cnt         <= 0;
+        s_spi_frame        <= NOP;
+        s_register_address <= 0;
+      else
 
-  s_init_done <= true when s_init_fsm = INIT_DONE else false;
+        case s_cmdctrl_fsm is
+          when IDLE =>
+            s_init_cnt <= 0;
+            s_spi_frame        <= NOP;
+            s_register_address <= 0;
 
+          when INIT_SET =>
+            s_init_cnt <= s_init_cnt + 1;
+
+          when RXDR_ACK =>
+            if (LocalAck_i = '1') then
+              if (s_spi_frame = HEADER) then
+                s_register_address <= to_integer(unsigned(LocalData_i(6 downto 0)));
+                if (LocalData_i(7) = '0') then
+                  s_spi_frame <= READ_DATA;
+                else
+                  s_spi_frame <= WRITE_DATA;
+                end if;
+              else
+                if (LocalData_i = x"00") then
+                  s_spi_frame <= HEADER;
+                end if;
+              end if;
+            end if;
+
+          when others =>
+            null;
+
+        end case;
+
+      end if;
+    end if;
+  end process CmdRegisterP;
+
+
+  s_register_we <= LocalAck_i when s_cmdctrl_fsm = RXDR_ACK and s_spi_frame = WRITE_DATA else '0';
+
+
+  RegisterFileP : process (Clk_i) is
+  begin
+    if (rising_edge(Clk_i)) then
+      if (Rst_n_i = '0') then
+        s_register <= (others => (others => '0'));
+      else
+        if (s_register_we = '1') then
+          s_register(s_register_address) <= LocalData_i;
+        end if;
+      end if;
+    end if;
+  end process RegisterFileP;
 
 
 end architecture rtl;
