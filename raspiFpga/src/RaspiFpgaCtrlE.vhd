@@ -167,6 +167,8 @@ begin
               else
                 if (LocalData_i = x"00") then
                   s_spi_frame <= HEADER;
+                else
+                  s_spi_frame <= NOP;
                 end if;
               end if;
             end if;
