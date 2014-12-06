@@ -209,8 +209,8 @@ begin
     )
     port map (
       --+ wishbone system if
-      WbRst_i       => s_wb_clk,
-      WbClk_i       => s_wb_rst,
+      WbRst_i       => s_wb_rst,
+      WbClk_i       => s_wb_clk,
       --+ wishbone outputs
       WbCyc_o       => s_wb_cyc,
       WbStb_o       => s_wb_stb,
