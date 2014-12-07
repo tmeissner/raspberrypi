@@ -15,7 +15,7 @@ entity RaspiFpgaE is
     SpiMosi_i    : inout std_logic;
     SpiMiso_o    : inout std_logic;
     --* interrupt line to raspi
-    RaspiIrq_o   : out std_logic
+    RaspiIrq_o   : out   std_logic
   );
 end entity RaspiFpgaE;
 

@@ -41,7 +41,7 @@ architecture rtl of RaspiFpgaCtrlE is
 
 
   type t_cmdctrl_fsm is (IDLE, INIT_SET, INIT_ACK, TXDR_SET, TXDR_ACK, INT_WAIT,
-                         RXDR_SET, RXDR_ACK);
+                         RXDR_SET, RXDR_ACK, INT_CLEAR_SET, INT_CLEAR_ACK);
 
   signal s_cmdctrl_fsm : t_cmdctrl_fsm;
 
@@ -73,11 +73,12 @@ begin
 
   --+ FSM to write/request data from the wishbone master
   --+ Combinatoral outputs
-  LocalWen_o    <= '1' when s_cmdctrl_fsm = INIT_SET or s_cmdctrl_fsm = TXDR_SET else '0';
+  LocalWen_o    <= '1' when s_cmdctrl_fsm = INIT_SET or s_cmdctrl_fsm = TXDR_SET or s_cmdctrl_fsm = INT_CLEAR_SET else '0';
   LocalRen_o    <= '1' when s_cmdctrl_fsm = RXDR_SET else '0';
-  LocalAdress_o <= C_INIT(s_init_cnt).adr when s_cmdctrl_fsm = INIT_SET else
-                   C_SPITXDR              when s_cmdctrl_fsm = TXDR_SET else
-                   C_SPIRXDR              when s_cmdctrl_fsm = RXDR_SET else
+  LocalAdress_o <= C_INIT(s_init_cnt).adr when s_cmdctrl_fsm = INIT_SET      else
+                   C_SPITXDR              when s_cmdctrl_fsm = TXDR_SET      else
+                   C_SPIRXDR              when s_cmdctrl_fsm = RXDR_SET      else
+                   C_SPIIRQ               when s_cmdctrl_fsm = INT_CLEAR_SET else
                    (others => '0');
   LocalData_o   <= C_INIT(s_init_cnt).data        when s_cmdctrl_fsm = INIT_SET                             else
                    s_register(s_register_address) when s_cmdctrl_fsm = TXDR_SET and s_spi_frame = READ_DATA else
@@ -125,8 +126,16 @@ begin
 
           when RXDR_ACK =>
             if (LocalAck_i = '1') then
-              s_cmdctrl_fsm <= TXDR_SET;
+              s_cmdctrl_fsm <= INT_CLEAR_SET;
             end if;
+
+          when INT_CLEAR_SET =>  
+            s_cmdctrl_fsm <= INT_CLEAR_ACK;
+      
+          when INT_CLEAR_ACK =>
+            if (LocalAck_i = '1') then
+              s_cmdctrl_fsm <= TXDR_SET;
+            end if;  
 
           when others =>
             null;
