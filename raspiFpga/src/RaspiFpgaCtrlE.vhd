@@ -18,7 +18,11 @@ entity RaspiFpgaCtrlE is
     LocalAck_i    : in  std_logic;
     LocalError_i  : in  std_logic;
     --+ EFB if
-    EfbSpiIrq_i   : in  std_logic
+    EfbSpiIrq_i   : in  std_logic;
+    --+ RNG if
+    RngStart_o     : out std_logic;
+    RngDataValid_i : in  std_logic;
+    RngData_i      : in  std_logic_vector(7 downto 0)
   );
 end entity RaspiFpgaCtrlE;
 
@@ -129,13 +133,13 @@ begin
               s_cmdctrl_fsm <= INT_CLEAR_SET;
             end if;
 
-          when INT_CLEAR_SET =>  
+          when INT_CLEAR_SET =>
             s_cmdctrl_fsm <= INT_CLEAR_ACK;
-      
+
           when INT_CLEAR_ACK =>
             if (LocalAck_i = '1') then
               s_cmdctrl_fsm <= TXDR_SET;
-            end if;  
+            end if;
 
           when others =>
             null;
@@ -201,8 +205,14 @@ begin
       if (Rst_n_i = '0') then
         s_register <= (others => (others => '0'));
       else
+        s_register(0)(0) <= '0';  --* reset RNG start after each clock cycle
         if (s_register_we = '1') then
           s_register(s_register_address) <= LocalData_i;
+        end if;
+        --+ register RNG data
+        if (RngDataValid_i = '1') then
+          s_register(0)(1) <= '1';
+          s_register(1)    <= RngData_i;
         end if;
       end if;
     end if;

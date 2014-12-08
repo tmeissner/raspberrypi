@@ -70,9 +70,44 @@ architecture rtl of RaspiFpgaE is
       LocalAck_i    : in  std_logic;
       LocalError_i  : in  std_logic;
       --+ EFB if
-      EfbSpiIrq_i   : in  std_logic
+      EfbSpiIrq_i   : in  std_logic;
+      --+ RNG if
+      RngStart_o     : out std_logic;
+      RngDataValid_i : in  std_logic;
+      RngData_i      : in  std_logic_vector(7 downto 0)
     );
   end component RaspiFpgaCtrlE;
+
+
+  component FiRoCtrlE is
+    generic (
+      EXTRACT : boolean := true
+    );
+    port (
+      --+ system if
+      Clk_i       : in  std_logic;
+      Reset_i     : in  std_logic;
+      --+ ctrl/status
+      Start_i     : in  std_logic;
+      --+ rnd data
+      DataValid_o : out std_logic;
+      Data_o      : out std_logic_vector(7 downto 0);
+      -- firo
+      Run_o       : out std_logic;
+      Data_i      : in  std_logic
+    );
+  end component FiRoCtrlE;
+
+
+  component FiRoE is
+    generic (
+      TOGGLE   : boolean := true
+    );
+    port (
+      FiRo_o : out std_logic;
+      Run_i  : in  std_logic
+    );
+  end component FiRoE;
 
 
   --+ EFB SPI slave component
@@ -98,11 +133,9 @@ architecture rtl of RaspiFpgaE is
 
   --+ oscillator component
   component OSCH is
-    -- synthesis translate_off
     generic (
       NOM_FREQ : string := "26.60"
     );
-    -- synthesis translate_on
     port (
       STDBY    : in  std_logic;
       OSC      : out std_logic;
@@ -145,18 +178,23 @@ architecture rtl of RaspiFpgaE is
   signal s_local_write_data : std_logic_vector(7 downto 0);
   signal s_local_ack        : std_logic;
 
+  --+ RNG signals
+  signal s_rng_start      : std_logic;
+  signal s_rng_data_valid : std_logic;
+  signal s_rng_data       : std_logic_vector(7 downto 0);
+  signal s_firo_run       : std_logic;
+  signal s_firo_data      : std_logic;
+
 
 begin
 
 
   --+ Oscillator instance
-  --+ It's generating our 26.6 MHz csystem lock
+  --+ It's generating our 26.6 MHz system lock
   i_OSC : OSCH
-    -- synthesis off
     generic map (
       NOM_FREQ => "26.60"
     )
-    -- synthesis on
     port map (
       STDBY    => '0',
       OSC      => s_sys_clk,
@@ -247,6 +285,35 @@ begin
       LocalError_i  => '0',
       --+ EFB if
       EfbSpiIrq_i   => s_efb_irq
+    );
+
+
+  i_FiRoCtrlE : FiRoCtrlE
+    generic map (
+      EXTRACT => true
+    )
+    port map (
+      --+ system if
+      Clk_i       => s_sys_clk,
+      Reset_i     => s_sys_rst,
+      --+ ctrl/status
+      Start_i     => s_rng_start,
+      --+ rnd data
+      DataValid_o => s_rng_data_valid,
+      Data_o      => s_rng_data,
+      -- firo
+      Run_o       => s_firo_run,
+      Data_i      => s_firo_data
+    );
+
+
+  i_FiRoE : FiRoE
+    generic map (
+      TOGGLE => true
+    )
+    port map (
+      FiRo_o => s_firo_data,
+      Run_i  => s_firo_run
     );
 
 
