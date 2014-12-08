@@ -2,8 +2,8 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
---library machxo2;
---  use machxo2.components.all;
+library machxo2;
+  use machxo2.components.all;
 
 
 
@@ -73,6 +73,8 @@ architecture rtl of RaspiFpgaE is
       EfbSpiIrq_i   : in  std_logic;
       --+ RNG if
       RngStart_o     : out std_logic;
+      RngWait_o      : out std_logic_vector(7 downto 0);
+      RngRun_o       : out std_logic_vector(7 downto 0);
       RngDataValid_i : in  std_logic;
       RngData_i      : in  std_logic_vector(7 downto 0)
     );
@@ -89,6 +91,8 @@ architecture rtl of RaspiFpgaE is
       Reset_i     : in  std_logic;
       --+ ctrl/status
       Start_i     : in  std_logic;
+      Wait_i      : in  std_logic_vector(7 downto 0);
+      Run_i       : in  std_logic_vector(7 downto 0);
       --+ rnd data
       DataValid_o : out std_logic;
       Data_o      : out std_logic_vector(7 downto 0);
@@ -180,6 +184,8 @@ architecture rtl of RaspiFpgaE is
 
   --+ RNG signals
   signal s_rng_start      : std_logic;
+  signal s_rng_wait       : std_logic_vector(7 downto 0);
+  signal s_rng_run        : std_logic_vector(7 downto 0);
   signal s_rng_data_valid : std_logic;
   signal s_rng_data       : std_logic_vector(7 downto 0);
   signal s_firo_run       : std_logic;
@@ -284,7 +290,13 @@ begin
       LocalAck_i    => s_local_ack,
       LocalError_i  => '0',
       --+ EFB if
-      EfbSpiIrq_i   => s_efb_irq
+      EfbSpiIrq_i   => s_efb_irq,
+      --+ RNG if
+      RngStart_o     => s_rng_start,
+      RngWait_o      => s_rng_wait,
+      RngRun_o       => s_rng_run,
+      RngDataValid_i => s_rng_data_valid,
+      RngData_i      => s_rng_data
     );
 
 
@@ -298,6 +310,8 @@ begin
       Reset_i     => s_sys_rst,
       --+ ctrl/status
       Start_i     => s_rng_start,
+      Wait_i      => s_rng_wait,
+      Run_i       => s_rng_run,
       --+ rnd data
       DataValid_o => s_rng_data_valid,
       Data_o      => s_rng_data,

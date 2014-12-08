@@ -14,6 +14,8 @@ entity FiRoCtrlE is
     Reset_i     : in  std_logic;
     --+ ctrl/status
     Start_i     : in  std_logic;
+    Wait_i      : in  std_logic_vector(7 downto 0);
+    Run_i       : in  std_logic_vector(7 downto 0);
     --+ rnd data
     DataValid_o : out std_logic;
     Data_o      : out std_logic_vector(7 downto 0);
@@ -28,9 +30,8 @@ end entity FiRoCtrlE;
 architecture rtl of FiRoCtrlE is
 
 
-  signal s_clk_counter   : unsigned(4 downto 0);
-  signal s_run           : std_logic;
-  signal s_firo_valid    : std_logic;
+  signal s_firo_run   : std_logic;
+  signal s_firo_valid : std_logic;
 
   type t_neumann_state is (BIT1, BIT2, BIT3, BIT4);
   signal s_neumann_state : t_neumann_state;
@@ -46,6 +47,7 @@ architecture rtl of FiRoCtrlE is
 
   signal s_data : std_logic_vector(3 downto 0);
 
+
 begin
 
 
@@ -54,27 +56,31 @@ begin
 
 
   ControllerP : process (Clk_i) is
-    variable v_clk_cnt : unsigned(4 downto 0);
+    variable v_wait_cnt : unsigned(7 downto 0);
+    variable v_run_cnt  : unsigned(7 downto 0);
   begin
     if (rising_edge(Clk_i)) then
       if (s_register_state = SLEEP) then
-        v_clk_cnt := (others => '1');
-        s_run         <= '0';
+        v_wait_cnt    := unsigned(Wait_i);
+        v_run_cnt     := unsigned(Run_i);
+        s_firo_run    <= '0';
         s_firo_valid  <= '0';
       else
         s_firo_valid  <= '0';
-        if (v_clk_cnt = 23 and s_run = '0') then
-          s_run         <= '1';
-          v_clk_cnt := (others => '1');
+        if (v_wait_cnt = 0) then
+          s_firo_run <= '1';
+        else
+          v_wait_cnt := v_wait_cnt - 1;
         end if;
-        if (v_clk_cnt = 12 and s_run = '1') then
-          s_run     <= '0';
-          v_clk_cnt := (others => '1');
+        if (v_run_cnt = 0) then
+          s_firo_run   <= '0';
+        elsif (v_run_cnt = 1) then
+          s_firo_valid <= '1';
+        else
+          if (v_wait_cnt = 0) then
+            v_run_cnt := v_run_cnt - 1;
+          end if;
         end if;
-        if (v_clk_cnt = 13 and s_run = '1') then
-          s_firo_valid := '1';
-        end if;
-        v_clk_cnt := v_clk_cnt - 1;
       end if;
     end if;
   end process ControllerP;
@@ -86,9 +92,6 @@ begin
       if (rising_edge(Clk_i)) then
         if (Reset_i = '0') then
           s_neumann_state   <= BIT1;
-          --s_neumann_buffer  <= "000";
-          --s_register_enable <= '0';
-          --s_register_din    <= "00";
         else
           case s_neumann_state is
 

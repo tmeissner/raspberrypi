@@ -7,20 +7,22 @@ library ieee;
 entity RaspiFpgaCtrlE is
   port (
     --+ System if
-    Rst_n_i       : in  std_logic;
-    Clk_i         : in  std_logic;
+    Rst_n_i        : in  std_logic;
+    Clk_i          : in  std_logic;
     --+ local register if
-    LocalWen_o    : out std_logic;
-    LocalRen_o    : out std_logic;
-    LocalAdress_o : out std_logic_vector(7 downto 0);
-    LocalData_i   : in  std_logic_vector(7 downto 0);
-    LocalData_o   : out std_logic_vector(7 downto 0);
-    LocalAck_i    : in  std_logic;
-    LocalError_i  : in  std_logic;
+    LocalWen_o     : out std_logic;
+    LocalRen_o     : out std_logic;
+    LocalAdress_o  : out std_logic_vector(7 downto 0);
+    LocalData_i    : in  std_logic_vector(7 downto 0);
+    LocalData_o    : out std_logic_vector(7 downto 0);
+    LocalAck_i     : in  std_logic;
+    LocalError_i   : in  std_logic;
     --+ EFB if
-    EfbSpiIrq_i   : in  std_logic;
+    EfbSpiIrq_i    : in  std_logic;
     --+ RNG if
     RngStart_o     : out std_logic;
+    RngWait_o      : out std_logic_vector(7 downto 0);
+    RngRun_o       : out std_logic_vector(7 downto 0);
     RngDataValid_i : in  std_logic;
     RngData_i      : in  std_logic_vector(7 downto 0)
   );
@@ -43,6 +45,11 @@ architecture rtl of RaspiFpgaCtrlE is
   constant C_SPIIRQ   : std_logic_vector(7 downto 0) := x"5C";  --* interrupt request
   constant C_SPIIRQEN : std_logic_vector(7 downto 0) := x"5D";  --* interrupt request enable
 
+  --+ Register file addresses
+  constant C_REG_RNGSTATUS : natural := 0;
+  constant C_REG_RNGWAIT   : natural := 1;
+  constant C_REG_RNGRUN    : natural := 2;
+  constant C_REG_RNGDATA   : natural := 3;
 
   type t_cmdctrl_fsm is (IDLE, INIT_SET, INIT_ACK, TXDR_SET, TXDR_ACK, INT_WAIT,
                          RXDR_SET, RXDR_ACK, INT_CLEAR_SET, INT_CLEAR_ACK);
@@ -89,6 +96,8 @@ begin
                    x"FF";
 
 
+  --+ FSM to write/request data from the wishbone master
+  --+ State logic/register
   CmdCtrlP : process (Clk_i) is
   begin
     if (rising_edge(Clk_i)) then
@@ -150,6 +159,8 @@ begin
   end process CmdCtrlP;
 
 
+  --+ FSM to write/request data from the wishbone master
+  --+ Registered outputs
   CmdRegisterP : process (Clk_i) is
   begin
     if (rising_edge(Clk_i)) then
@@ -196,27 +207,41 @@ begin
   end process CmdRegisterP;
 
 
+  --+ Register bank write enable
   s_register_we <= LocalAck_i when s_cmdctrl_fsm = RXDR_ACK and s_spi_frame = WRITE_DATA else '0';
 
 
+  --+ Register bank 127x8
   RegisterFileP : process (Clk_i) is
   begin
     if (rising_edge(Clk_i)) then
       if (Rst_n_i = '0') then
-        s_register <= (others => (others => '0'));
+        s_register                <= (others => (others => '0'));
+        s_register(C_REG_RNGWAIT) <= x"0F";
+        s_register(C_REG_RNGRUN)  <= x"0F";
       else
-        s_register(0)(0) <= '0';  --* reset RNG start after each clock cycle
+        s_register(C_REG_RNGSTATUS)(0) <= '0';  -- reset RNG start after each clock cycle
         if (s_register_we = '1') then
           s_register(s_register_address) <= LocalData_i;
         end if;
-        --+ register RNG data
+        -- register RNG data
         if (RngDataValid_i = '1') then
-          s_register(0)(1) <= '1';
-          s_register(1)    <= RngData_i;
+          s_register(C_REG_RNGSTATUS)(1) <= '1';
+          s_register(C_REG_RNGDATA)      <= RngData_i;
+        end if;
+        -- clear RNG done flag when RNG was started
+        if (s_register(C_REG_RNGSTATUS)(0) = '1') then
+          s_register(C_REG_RNGSTATUS)(1) <= '0';
         end if;
       end if;
     end if;
   end process RegisterFileP;
+
+
+  --+ RNG control outputs
+  RngStart_o <= s_register(C_REG_RNGSTATUS)(0);
+  RngWait_o  <= s_register(C_REG_RNGWAIT);
+  RngRun_o   <= s_register(C_REG_RNGRUN);
 
 
 end architecture rtl;
