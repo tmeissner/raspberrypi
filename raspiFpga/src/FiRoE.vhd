@@ -23,12 +23,16 @@ architecture rtl of FiRoE is
   signal s_ring : std_logic_vector(15 downto 0);
   signal s_tff  : std_logic;
 
-  --+ attributes for synplify synthesis tool to preserve inverter loop
+  --+ attributes for synthesis tool to preserve inverter loop
   attribute syn_keep : boolean;
   attribute syn_hier : string;
   attribute syn_hier of rtl    : architecture is "hard";
   attribute syn_keep of s_ring : signal is true;
   attribute syn_keep of s_tff  : signal is true;
+
+  --+ Attributes for lattice map tool to not merging inverter loop
+  attribute nomerge : boolean;
+  attribute nomerge of s_ring : signal is true;
 
 
 begin
