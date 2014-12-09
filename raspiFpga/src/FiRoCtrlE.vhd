@@ -172,8 +172,8 @@ begin
         case s_register_state is
 
           when SLEEP =>
-            if (Start_i = '1') then
-              DataValid_o        <= '0';
+             DataValid_o        <= '0';
+            if (Start_i = '1' and Run_i /= x"00") then
               s_register_state   <= COLLECT;
               s_register_data(0) <= s_register_data(8);
             end if;
