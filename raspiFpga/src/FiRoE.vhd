@@ -2,11 +2,15 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
+library machxo2;
+  use machxo2.components.all;
+
 
 
 entity FiRoE is
   generic (
-    TOGGLE   : boolean := true
+    IMP    : string  := "HDL",
+    TOGGLE : boolean := true
   );
   port (
     FiRo_o : out std_logic;
@@ -38,11 +42,32 @@ architecture rtl of FiRoE is
 begin
 
 
-  FiroRingG : for index in 1 to 15 generate
+  FiroRingG : for index in 0 to 30 generate
 
-    s_ring(index) <= not(s_ring(index - 1));
+    HdlG : if IMP = "HDL" generate
+
+      s_ring(index) <= not(s_ring(index - 1));
+
+    end generate HdlG;
+
+    LutG : if IMP = "LUT" generate
+
+      lut : LUT4
+        generic map (
+          init => x"FFFF"
+        )
+        port map (
+          Z => s_ring(i-1),
+          A => s_ring(i),
+          B => '0',
+          C => '0',
+          D => '0'
+        );
+
+      end generate LutG;
 
   end generate FiroRingG;
+
 
   s_ring(0) <= (s_ring(15) xor s_ring(14) xor s_ring(7) xor s_ring(6) xor s_ring(5) xor s_ring(4) xor s_ring(2)) and Run_i;
 

@@ -105,7 +105,8 @@ architecture rtl of RaspiFpgaE is
 
   component FiRoE is
     generic (
-      TOGGLE   : boolean := true
+      IMP    : string  := "HDL",
+      TOGGLE : boolean := true
     );
     port (
       FiRo_o : out std_logic;
@@ -323,6 +324,7 @@ begin
 
   i_FiRoE : FiRoE
     generic map (
+      IMP    => "LUT",
       TOGGLE => true
     )
     port map (
